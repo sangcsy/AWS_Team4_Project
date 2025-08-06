@@ -1,21 +1,36 @@
 import { Request, Response } from 'express';
 import { UserService } from '../../application/user/UserService';
+import { MyRoomService } from '../../application/myroom/MyRoomService';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
 export class UserController {
   private userService: UserService;
+  private myRoomService?: MyRoomService;
 
-  constructor(userService: UserService) {
+  constructor(userService: UserService, myRoomService?: MyRoomService) {
     this.userService = userService;
+    this.myRoomService = myRoomService;
   }
 
   register = async (req: Request, res: Response) => {
     try {
       const { email, password, nickname } = req.body;
       const user = await this.userService.register(email, password, nickname);
-      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+      // MyRoom 자동 생성
+      if (this.myRoomService) {
+        await this.myRoomService.createMyRoom({
+          userId: user.id,
+          nickname: user.nickname,
+          temperature: user.temperature,
+          items: [],
+          avatar: 'default',
+          background: 'default',
+          summary: '',
+        });
+      }
+      const token = jwt.sign({ userId: user.id, nickname: user.nickname }, JWT_SECRET, { expiresIn: '7d' });
       res.status(201).json({ token, user: { nickname: user.nickname, email: user.email, temperature: user.temperature } });
     } catch (err: any) {
       if (err.message === 'EMAIL_EXISTS') return res.status(409).json({ error: '이미 사용 중인 이메일입니다.' });
