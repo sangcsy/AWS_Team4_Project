@@ -1,35 +1,35 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import { UserRepositoryImpl } from './infrastructure/user/UserRepositoryImpl';
-import { UserService } from './application/user/UserService';
-import { UserController } from './interfaces/controllers/UserController';
-import { createUserRoutes } from './interfaces/routes/userRoutes';
-import { PostRepositoryImpl } from './infrastructure/post/PostRepositoryImpl';
-import { PostService } from './application/post/PostService';
-import { PostController } from './interfaces/controllers/PostController';
-import { createPostRoutes } from './interfaces/routes/postRoutes';
-import { CommentRepositoryImpl } from './infrastructure/comment/CommentRepositoryImpl';
-import { CommentService } from './application/comment/CommentService';
-import { CommentController } from './interfaces/controllers/CommentController';
-import { createCommentRoutes } from './interfaces/routes/commentRoutes';
-import { MyRoomRepositoryImpl } from './infrastructure/myroom/MyRoomRepositoryImpl';
-import { MyRoomService } from './application/myroom/MyRoomService';
-import { MyRoomController } from './interfaces/controllers/MyRoomController';
-import { createMyRoomRoutes } from './interfaces/routes/myroomRoutes';
-import { FollowRepositoryImpl } from './infrastructure/follow/FollowRepositoryImpl';
-import { FollowService } from './application/follow/FollowService';
-import { FollowController } from './interfaces/controllers/FollowController';
-import { createFollowRoutes } from './interfaces/routes/followRoutes';
-import { MarketRepositoryImpl } from './infrastructure/market/MarketRepositoryImpl';
-import { MarketService } from './application/market/MarketService';
-import { MarketController } from './interfaces/controllers/MarketController';
-import { createMarketRoutes } from './interfaces/routes/marketRoutes';
-import { ReviewRepositoryImpl } from './infrastructure/review/ReviewRepositoryImpl';
-import { ReviewService } from './application/review/ReviewService';
-import { ReviewController } from './interfaces/controllers/ReviewController';
-import { createReviewRoutes } from './interfaces/routes/reviewRoutes';
-import swaggerUi from 'swagger-ui-express';
-import { swaggerSpec } from './interfaces/docs/swagger';
+const express = require('express');
+const bodyParser = require('body-parser');
+const { UserRepositoryImpl } = require('./infrastructure/user/UserRepositoryImpl');
+const { UserService } = require('./application/user/UserService');
+const { UserController } = require('./interfaces/controllers/UserController');
+const { createUserRoutes } = require('./interfaces/routes/userRoutes');
+const { PostRepositoryImpl } = require('./infrastructure/post/PostRepositoryImpl');
+const { PostService } = require('./application/post/PostService');
+const { PostController } = require('./interfaces/controllers/PostController');
+const { createPostRoutes } = require('./interfaces/routes/postRoutes');
+const { CommentRepositoryImpl } = require('./infrastructure/comment/CommentRepositoryImpl');
+const { CommentService } = require('./application/comment/CommentService');
+const { CommentController } = require('./interfaces/controllers/CommentController');
+const { createCommentRoutes } = require('./interfaces/routes/commentRoutes');
+const { MyRoomRepositoryImpl } = require('./infrastructure/myroom/MyRoomRepositoryImpl');
+const { MyRoomService } = require('./application/myroom/MyRoomService');
+const { MyRoomController } = require('./interfaces/controllers/MyRoomController');
+const { createMyRoomRoutes } = require('./interfaces/routes/myroomRoutes');
+const { FollowRepositoryImpl } = require('./infrastructure/follow/FollowRepositoryImpl');
+const { FollowService } = require('./application/follow/FollowService');
+const { FollowController } = require('./interfaces/controllers/FollowController');
+const { createFollowRoutes } = require('./interfaces/routes/followRoutes');
+const { MarketRepositoryImpl } = require('./infrastructure/market/MarketRepositoryImpl');
+const { MarketService } = require('./application/market/MarketService');
+const { MarketController } = require('./interfaces/controllers/MarketController');
+const { createMarketRoutes } = require('./interfaces/routes/marketRoutes');
+const { ReviewRepositoryImpl } = require('./infrastructure/review/ReviewRepositoryImpl');
+const { ReviewService } = require('./application/review/ReviewService');
+const { ReviewController } = require('./interfaces/controllers/ReviewController');
+const { createReviewRoutes } = require('./interfaces/routes/reviewRoutes');
+const swaggerUi = require('swagger-ui-express');
+const { swaggerSpec } = require('./interfaces/docs/swagger');
 
 const app = express();
 app.use(bodyParser.json());
@@ -73,4 +73,17 @@ app.use('/api', createFollowRoutes(followController));
 app.use('/api', createMarketRoutes(marketController));
 app.use('/api', createReviewRoutes(reviewController));
 
-export default app;
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', message: 'TEMPUS Backend is running' });
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 TEMPUS Backend server is running on port ${PORT}`);
+  console.log(`📚 Swagger UI: http://localhost:${PORT}/api-docs`);
+  console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+});
+
+module.exports = app;

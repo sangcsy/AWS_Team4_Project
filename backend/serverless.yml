@@ -1,0 +1,135 @@
+service: tempus-backend
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ap-northeast-2
+  environment:
+    DB_HOST: ${env:DB_HOST}
+    DB_USER: ${env:DB_USER}
+    DB_PASSWORD: ${env:DB_PASSWORD}
+    DB_NAME: ${env:DB_NAME}
+    DB_PORT: ${env:DB_PORT}
+    JWT_SECRET: ${env:JWT_SECRET}
+    JWT_EXPIRES_IN: ${env:JWT_EXPIRES_IN}
+    NODE_ENV: production
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - rds:*
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - s3:*
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "*"
+
+functions:
+  # 사용자 인증 서비스
+  user-service:
+    handler: lambda/user-service.handler
+    events:
+      - httpApi:
+          path: /auth/{proxy+}
+          method: ANY
+      - httpApi:
+          path: /temperature
+          method: GET
+    environment:
+      FUNCTION_NAME: user-service
+
+  # 게시글 서비스
+  post-service:
+    handler: lambda/post-service.handler
+    events:
+      - httpApi:
+          path: /posts/{proxy+}
+          method: ANY
+    environment:
+      FUNCTION_NAME: post-service
+
+  # 댓글 서비스
+  comment-service:
+    handler: lambda/comment-service.handler
+    events:
+      - httpApi:
+          path: /posts/{postId}/comments/{proxy+}
+          method: ANY
+    environment:
+      FUNCTION_NAME: comment-service
+
+  # 마이룸 서비스
+  myroom-service:
+    handler: lambda/myroom-service.handler
+    events:
+      - httpApi:
+          path: /myroom/{proxy+}
+          method: ANY
+    environment:
+      FUNCTION_NAME: myroom-service
+
+  # 팔로우 서비스
+  follow-service:
+    handler: lambda/follow-service.handler
+    events:
+      - httpApi:
+          path: /follow/{proxy+}
+          method: ANY
+      - httpApi:
+          path: /feed
+          method: GET
+    environment:
+      FUNCTION_NAME: follow-service
+
+  # 마켓 서비스
+  market-service:
+    handler: lambda/market-service.handler
+    events:
+      - httpApi:
+          path: /market/{proxy+}
+          method: ANY
+    environment:
+      FUNCTION_NAME: market-service
+
+  # 후기 서비스
+  review-service:
+    handler: lambda/review-service.handler
+    events:
+      - httpApi:
+          path: /reviews/{proxy+}
+          method: ANY
+    environment:
+      FUNCTION_NAME: review-service
+
+  # 이미지 업로드 서비스
+  image-service:
+    handler: lambda/image-service.handler
+    events:
+      - httpApi:
+          path: /upload/{proxy+}
+          method: ANY
+    environment:
+      FUNCTION_NAME: image-service
+      S3_BUCKET_NAME: ${env:S3_BUCKET_NAME}
+
+plugins:
+  - serverless-webpack
+  - serverless-offline
+
+custom:
+  webpack:
+    webpackConfig: webpack.config.js
+    includeModules: true
+    packager: 'npm'
+  serverless-offline:
+    httpPort: 3000
+    lambdaPort: 3002
