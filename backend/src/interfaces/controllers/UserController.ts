@@ -1,69 +1,141 @@
-import { Request, Response } from 'express';
-import { UserService } from '../../application/user/UserService';
-import { MyRoomService } from '../../application/myroom/MyRoomService';
-import jwt from 'jsonwebtoken';
+const { UserService } = require('../../application/user/UserService');
+const { UserRepositoryImpl } = require('../../infrastructure/user/UserRepositoryImpl');
+const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
-
-export class UserController {
-  private userService: UserService;
-  private myRoomService?: MyRoomService;
-
-  constructor(userService: UserService, myRoomService?: MyRoomService) {
-    this.userService = userService;
-    this.myRoomService = myRoomService;
+class UserController {
+  constructor() {
+    const userRepository = new UserRepositoryImpl();
+    this.userService = new UserService(userRepository);
   }
 
-  register = async (req: Request, res: Response) => {
+  register = async (req, res) => {
     try {
       const { email, password, nickname } = req.body;
-      const user = await this.userService.register(email, password, nickname);
-      // MyRoom 자동 생성
-      if (this.myRoomService) {
-        await this.myRoomService.createMyRoom({
-          userId: user.id,
-          nickname: user.nickname,
-          temperature: user.temperature,
-          items: [],
-          avatar: 'default',
-          background: 'default',
-          summary: '',
+
+      // 입력 검증
+      if (!email || !password || !nickname) {
+        return res.status(400).json({
+          success: false,
+          error: '이메일, 비밀번호, 닉네임을 모두 입력해주세요.'
         });
       }
-      const token = jwt.sign({ userId: user.id, nickname: user.nickname }, JWT_SECRET, { expiresIn: '7d' });
-      res.status(201).json({ token, user: { nickname: user.nickname, email: user.email, temperature: user.temperature } });
-    } catch (err: any) {
-      if (err.message === 'EMAIL_EXISTS') return res.status(409).json({ error: '이미 사용 중인 이메일입니다.' });
-      if (err.message === 'NICKNAME_EXISTS') return res.status(409).json({ error: '이미 사용 중인 닉네임입니다.' });
-      if (err.message === 'WEAK_PASSWORD') return res.status(400).json({ error: '비밀번호가 너무 약합니다.' });
-      res.status(500).json({ error: '회원가입 실패' });
+
+      const user = await this.userService.register({ email, password, nickname });
+      
+      // JWT 토큰 생성
+      const token = jwt.sign(
+        { userId: user.id, email: user.email },
+        process.env['JWT_SECRET'] || 'your_jwt_secret',
+        { expiresIn: '24h' }
+      );
+
+      res.status(201).json({
+        success: true,
+        message: '회원가입이 완료되었습니다.',
+        data: {
+          user,
+          token
+        }
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        error: error.message
+      });
     }
   };
 
-  login = async (req: Request, res: Response) => {
+  login = async (req, res) => {
     try {
       const { email, password } = req.body;
-      const user = await this.userService.login(email, password);
-      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-      res.status(200).json({ token, user: { nickname: user.nickname, email: user.email, temperature: user.temperature } });
-    } catch (err: any) {
-      if (err.message === 'USER_NOT_FOUND' || err.message === 'INVALID_PASSWORD') return res.status(401).json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
-      res.status(500).json({ error: '로그인 실패' });
+
+      // 입력 검증
+      if (!email || !password) {
+        return res.status(400).json({
+          success: false,
+          error: '이메일과 비밀번호를 입력해주세요.'
+        });
+      }
+
+      const user = await this.userService.login({ email, password });
+      
+      // JWT 토큰 생성
+      const token = jwt.sign(
+        { userId: user.id, email: user.email },
+        process.env['JWT_SECRET'] || 'your_jwt_secret',
+        { expiresIn: '24h' }
+      );
+
+      res.json({
+        success: true,
+        message: '로그인이 완료되었습니다.',
+        data: {
+          user,
+          token
+        }
+      });
+    } catch (error) {
+      res.status(401).json({
+        success: false,
+        error: error.message
+      });
     }
   };
 
-  checkNickname = async (req: Request, res: Response) => {
-    const { nickname } = req.query;
-    if (typeof nickname !== 'string') return res.status(400).json({ error: '닉네임이 필요합니다.' });
-    const available = await this.userService.isNicknameAvailable(nickname);
-    res.json({ available });
+  checkNickname = async (req, res) => {
+    try {
+      const { nickname } = req.query;
+
+      if (!nickname || typeof nickname !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: '닉네임을 입력해주세요.'
+        });
+      }
+
+      const isAvailable = await this.userService.checkNickname(nickname);
+
+      res.json({
+        success: true,
+        data: {
+          nickname,
+          isAvailable
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
   };
 
-  getMyTemperature = async (req: Request, res: Response) => {
-    const user = (req as any).user;
-    if (!user) return res.status(401).json({ error: '인증 필요' });
-    const userObj = await this.userService.getUserById(user.userId);
-    if (!userObj) return res.status(404).json({ error: '유저 없음' });
-    res.json({ temperature: userObj.temperature });
+  getMyTemperature = async (req, res) => {
+    try {
+      const userId = req.user?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          error: '인증이 필요합니다.'
+        });
+      }
+
+      const temperature = await this.userService.getMyTemperature(userId);
+
+      res.json({
+        success: true,
+        data: {
+          temperature
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
   };
 }
+
+module.exports = { UserController };

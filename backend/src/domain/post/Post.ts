@@ -1,26 +1,40 @@
-export interface PostProps {
+export interface Post {
   id: string;
-  authorId: string;
+  user_id: string;
   title: string;
   content: string;
-  createdAt: Date;
-  updatedAt: Date;
+  temperature_change: number;
+  created_at: Date;
+  updated_at: Date;
 }
 
-export class Post {
-  id: string;
-  authorId: string;
+export interface CreatePostRequest {
   title: string;
   content: string;
-  createdAt: Date;
-  updatedAt: Date;
+  temperature_change?: number;
+}
 
-  constructor(props: PostProps) {
-    this.id = props.id;
-    this.authorId = props.authorId;
-    this.title = props.title;
-    this.content = props.content;
-    this.createdAt = props.createdAt;
-    this.updatedAt = props.updatedAt;
-  }
+export interface UpdatePostRequest {
+  title?: string;
+  content?: string;
+  temperature_change?: number;
+}
+
+export interface PostResponse {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  temperature_change: number;
+  created_at: Date;
+  updated_at: Date;
+  author_nickname?: string;
+  author_temperature?: number;
+}
+
+export interface PostListResponse {
+  posts: PostResponse[];
+  total: number;
+  page: number;
+  limit: number;
 }

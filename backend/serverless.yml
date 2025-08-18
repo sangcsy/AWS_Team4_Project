@@ -4,8 +4,9 @@ frameworkVersion: '3'
 
 provider:
   name: aws
-  runtime: nodejs18.x
-  region: ap-northeast-2
+  runtime: nodejs22.x
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
   environment:
     DB_HOST: ${env:DB_HOST}
     DB_USER: ${env:DB_USER}
@@ -13,113 +14,27 @@ provider:
     DB_NAME: ${env:DB_NAME}
     DB_PORT: ${env:DB_PORT}
     JWT_SECRET: ${env:JWT_SECRET}
-    JWT_EXPIRES_IN: ${env:JWT_EXPIRES_IN}
-    NODE_ENV: production
+    JWT_EXPIRES_IN: ${env:JWT_EXPIRES_IN, '7d'}
+    S3_BUCKET_NAME: ${env:S3_BUCKET_NAME}
+    NODE_ENV: ${env:NODE_ENV, 'production'}
   iam:
-    role:
-      statements:
-        - Effect: Allow
-          Action:
-            - rds:*
-          Resource: "*"
-        - Effect: Allow
-          Action:
-            - s3:*
-          Resource: "*"
-        - Effect: Allow
-          Action:
-            - logs:CreateLogGroup
-            - logs:CreateLogStream
-            - logs:PutLogEvents
-          Resource: "*"
+    role: SafeRoleForUser-kusj-4
+  vpc:
+    securityGroupIds:
+      - sg-xxxxxxxxx  # RDS 보안 그룹 ID 필요
+    subnetIds:
+      - subnet-xxxxxxxxx  # 프라이빗 서브넷 ID 필요
 
 functions:
-  # 사용자 인증 서비스
-  user-service:
-    handler: lambda/user-service.handler
+  # Express 앱 서비스
+  api-service:
+    handler: src/main.handler
     events:
       - httpApi:
-          path: /auth/{proxy+}
-          method: ANY
-      - httpApi:
-          path: /temperature
-          method: GET
-    environment:
-      FUNCTION_NAME: user-service
-
-  # 게시글 서비스
-  post-service:
-    handler: lambda/post-service.handler
-    events:
-      - httpApi:
-          path: /posts/{proxy+}
+          path: /{proxy+}
           method: ANY
     environment:
-      FUNCTION_NAME: post-service
-
-  # 댓글 서비스
-  comment-service:
-    handler: lambda/comment-service.handler
-    events:
-      - httpApi:
-          path: /posts/{postId}/comments/{proxy+}
-          method: ANY
-    environment:
-      FUNCTION_NAME: comment-service
-
-  # 마이룸 서비스
-  myroom-service:
-    handler: lambda/myroom-service.handler
-    events:
-      - httpApi:
-          path: /myroom/{proxy+}
-          method: ANY
-    environment:
-      FUNCTION_NAME: myroom-service
-
-  # 팔로우 서비스
-  follow-service:
-    handler: lambda/follow-service.handler
-    events:
-      - httpApi:
-          path: /follow/{proxy+}
-          method: ANY
-      - httpApi:
-          path: /feed
-          method: GET
-    environment:
-      FUNCTION_NAME: follow-service
-
-  # 마켓 서비스
-  market-service:
-    handler: lambda/market-service.handler
-    events:
-      - httpApi:
-          path: /market/{proxy+}
-          method: ANY
-    environment:
-      FUNCTION_NAME: market-service
-
-  # 후기 서비스
-  review-service:
-    handler: lambda/review-service.handler
-    events:
-      - httpApi:
-          path: /reviews/{proxy+}
-          method: ANY
-    environment:
-      FUNCTION_NAME: review-service
-
-  # 이미지 업로드 서비스
-  image-service:
-    handler: lambda/image-service.handler
-    events:
-      - httpApi:
-          path: /upload/{proxy+}
-          method: ANY
-    environment:
-      FUNCTION_NAME: image-service
-      S3_BUCKET_NAME: ${env:S3_BUCKET_NAME}
+      FUNCTION_NAME: api-service
 
 plugins:
   - serverless-webpack
@@ -133,3 +48,12 @@ custom:
   serverless-offline:
     httpPort: 3000
     lambdaPort: 3002
+    useChildProcesses: true
+    allowCache: true
+    # Express 앱을 직접 실행하도록 설정
+    noPrependStageInUrl: true
+    # Lambda 함수 대신 Express 앱 사용
+    useDocker: false
+
+# dotenv 설정
+useDotenv: true

@@ -1,89 +1,143 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const { UserRepositoryImpl } = require('./infrastructure/user/UserRepositoryImpl');
-const { UserService } = require('./application/user/UserService');
-const { UserController } = require('./interfaces/controllers/UserController');
-const { createUserRoutes } = require('./interfaces/routes/userRoutes');
-const { PostRepositoryImpl } = require('./infrastructure/post/PostRepositoryImpl');
-const { PostService } = require('./application/post/PostService');
-const { PostController } = require('./interfaces/controllers/PostController');
-const { createPostRoutes } = require('./interfaces/routes/postRoutes');
-const { CommentRepositoryImpl } = require('./infrastructure/comment/CommentRepositoryImpl');
-const { CommentService } = require('./application/comment/CommentService');
-const { CommentController } = require('./interfaces/controllers/CommentController');
-const { createCommentRoutes } = require('./interfaces/routes/commentRoutes');
-const { MyRoomRepositoryImpl } = require('./infrastructure/myroom/MyRoomRepositoryImpl');
-const { MyRoomService } = require('./application/myroom/MyRoomService');
-const { MyRoomController } = require('./interfaces/controllers/MyRoomController');
-const { createMyRoomRoutes } = require('./interfaces/routes/myroomRoutes');
-const { FollowRepositoryImpl } = require('./infrastructure/follow/FollowRepositoryImpl');
-const { FollowService } = require('./application/follow/FollowService');
-const { FollowController } = require('./interfaces/controllers/FollowController');
-const { createFollowRoutes } = require('./interfaces/routes/followRoutes');
-const { MarketRepositoryImpl } = require('./infrastructure/market/MarketRepositoryImpl');
-const { MarketService } = require('./application/market/MarketService');
-const { MarketController } = require('./interfaces/controllers/MarketController');
-const { createMarketRoutes } = require('./interfaces/routes/marketRoutes');
-const { ReviewRepositoryImpl } = require('./infrastructure/review/ReviewRepositoryImpl');
-const { ReviewService } = require('./application/review/ReviewService');
-const { ReviewController } = require('./interfaces/controllers/ReviewController');
-const { createReviewRoutes } = require('./interfaces/routes/reviewRoutes');
-const swaggerUi = require('swagger-ui-express');
-const { swaggerSpec } = require('./interfaces/docs/swagger');
+const cors = require('cors');
+const path = require('path');
+const { createTables, testConnection } = require('./shared/database');
+
+// 실제 라우터 import
+const userRoutes = require('./interfaces/routes/userRoutes');
+const postRoutes = require('./interfaces/routes/postRoutes');
+const commentRoutes = require('./interfaces/routes/commentRoutes');
+const myroomRoutes = require('./interfaces/routes/myroomRoutes');
+const followRoutes = require('./interfaces/routes/followRoutes');
 
 const app = express();
-app.use(bodyParser.json());
+const PORT = process.env['PORT'] || 3000;
 
-// Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// 미들웨어 설정
+app.use(cors());
+app.use(express.json());
 
-// DI
-const userRepository = new UserRepositoryImpl();
-const myRoomRepository = new MyRoomRepositoryImpl();
-const myRoomService = new MyRoomService(myRoomRepository, userRepository);
-const userService = new UserService(userRepository);
-const userController = new UserController(userService, myRoomService);
+// 정적 파일 서빙 (테스트 페이지용)
+app.use(express.static(path.join(__dirname, '..')));
 
-const postRepository = new PostRepositoryImpl();
-const postService = new PostService(postRepository, userRepository);
-const postController = new PostController(postService);
-
-const commentRepository = new CommentRepositoryImpl();
-const commentService = new CommentService(commentRepository, userRepository);
-const commentController = new CommentController(commentService);
-
-const myRoomController = new MyRoomController(myRoomService);
-
-const followRepository = new FollowRepositoryImpl();
-const followService = new FollowService(followRepository, userRepository, postRepository);
-const followController = new FollowController(followService);
-
-const marketRepository = new MarketRepositoryImpl();
-const reviewRepository = new ReviewRepositoryImpl();
-const marketService = new MarketService(marketRepository, userRepository, reviewRepository);
-const marketController = new MarketController(marketService);
-const reviewService = new ReviewService(reviewRepository, userRepository);
-const reviewController = new ReviewController(reviewService);
-
-app.use('/api', createUserRoutes(userController));
-app.use('/api', createPostRoutes(postController));
-app.use('/api', createCommentRoutes(commentController));
-app.use('/api', createMyRoomRoutes(myRoomController));
-app.use('/api', createFollowRoutes(followController));
-app.use('/api', createMarketRoutes(marketController));
-app.use('/api', createReviewRoutes(reviewController));
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'TEMPUS Backend is running' });
+// 루트 경로
+app.get('/', (req, res) => {
+  res.json({
+    message: 'TEMPUS API Server',
+    version: '1.0.0',
+    status: 'running'
+  });
 });
 
-// Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 TEMPUS Backend server is running on port ${PORT}`);
-  console.log(`📚 Swagger UI: http://localhost:${PORT}/api-docs`);
-  console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+// 테스트 페이지
+app.get('/test', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'test.html'));
 });
+
+// 데이터베이스 상태 확인
+app.get('/api/health/db', async (req, res) => {
+  try {
+    const isConnected = await testConnection();
+    res.json({
+      success: true,
+      database: isConnected ? 'connected' : 'disconnected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      database: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// 실제 API 라우터 사용
+app.use('/api/auth', userRoutes);
+app.use('/api/posts', postRoutes);
+app.use('/api', commentRoutes);
+app.use('/api/myroom', myroomRoutes);
+app.use('/api/follow', followRoutes);
+
+// 404 핸들러
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'API 엔드포인트를 찾을 수 없습니다.'
+  });
+});
+
+// Lambda 핸들러 (serverless용)
+const serverless = require('serverless-http');
+
+// Lambda 환경에서 Express 앱을 래핑
+const serverlessHandler = serverless(app);
+
+exports.handler = async (event, context) => {
+  try {
+    // Lambda 환경에서 데이터베이스 연결 확인
+    if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
+      console.log('🔌 Lambda 환경에서 데이터베이스 연결 확인...');
+      await createTables();
+      console.log('✅ Lambda 환경 데이터베이스 연결 완료');
+    }
+    
+    // serverless-http로 Express 앱 실행
+    return await serverlessHandler(event, context);
+  } catch (error) {
+    console.error('❌ Lambda 핸들러 오류:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        success: false,
+        error: 'Lambda 핸들러 오류',
+        message: error.message
+      })
+    };
+  }
+};
+
+// Express 앱 시작 (항상 실행)
+const startServer = async () => {
+  try {
+    // 데이터베이스 연결 및 테이블 생성
+    console.log('🔌 Connecting to database...');
+    await createTables();
+    console.log('✅ Database setup completed');
+    
+    // 서버 시작
+    app.listen(PORT, () => {
+      console.log(`🚀 Server is running on port ${PORT}`);
+      console.log(`📚 Real APIs available at:`);
+      console.log(`   POST /api/auth/register`);
+      console.log(`   POST /api/auth/login`);
+      console.log(`   GET  /api/auth/check-nickname`);
+      console.log(`   GET  /api/auth/temperature`);
+      console.log(`   POST /api/posts`);
+      console.log(`   GET  /api/posts`);
+      console.log(`   GET  /api/posts/:id`);
+      console.log(`   POST /api/posts/:postId/comments`);
+      console.log(`   GET  /api/posts/:postId/comments`);
+      console.log(`   GET  /api/comments/:id`);
+      console.log(`   GET  /api/health/db`);
+      console.log(`   POST /api/myroom`);
+      console.log(`   GET  /api/myroom`);
+      console.log(`   PATCH /api/myroom/temperature`);
+      console.log(`   POST /api/myroom/items`);
+      console.log(`   GET  /api/myroom/items`);
+      console.log(`   POST /api/follow`);
+      console.log(`   GET  /api/follow/followers/:userId`);
+      console.log(`   GET  /api/follow/following/:userId`);
+      console.log(`   GET  /api/follow/stats/:userId`);
+      console.log(`🌐 Test page: http://localhost:${PORT}/test`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 module.exports = app;
