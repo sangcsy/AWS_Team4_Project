@@ -95,11 +95,11 @@
             gap: 10px;
         }
         
-        .method {
+                .method {
             padding: 4px 8px;
             border-radius: 6px;
             font-size: 0.8rem;
-            font-weight: 600;
+            font-weight: bold;
             text-transform: uppercase;
         }
         
@@ -107,7 +107,7 @@
         .method.get { background: #007bff; color: white; }
         .method.put { background: #ffc107; color: black; }
         .method.delete { background: #dc3545; color: white; }
-        .method.patch { background: #6f42c1; color: white; }
+        .method.patch { background: #fd7e14; color: white; }
         
         .input-group {
             margin-bottom: 15px;
@@ -744,6 +744,134 @@
         </div>
     </div>
 
+    <!-- 랜덤 매칭 시스템 API 섹션 -->
+    <div class="api-section">
+        <div class="section-header">💕 랜덤 매칭 시스템</div>
+        <div class="api-grid">
+            <!-- 프로필 관리 -->
+            <div class="api-card">
+                <div class="api-title">
+                    <span class="method post">POST</span>
+                    프로필 생성
+                </div>
+                <div class="input-group">
+                    <label>키 (cm):</label>
+                    <input type="number" id="profileHeight" placeholder="170">
+                </div>
+                <div class="input-group">
+                    <label>나이:</label>
+                    <input type="number" id="profileAge" placeholder="25">
+                </div>
+                <div class="input-group">
+                    <label>성별:</label>
+                    <select id="profileGender">
+                        <option value="male">남성</option>
+                        <option value="female">여성</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>학과:</label>
+                    <input type="text" id="profileMajor" placeholder="컴퓨터공학과">
+                </div>
+                <div class="input-group">
+                    <label>MBTI:</label>
+                    <input type="text" id="profileMbti" placeholder="INTJ">
+                </div>
+                <div class="input-group">
+                    <label>취미:</label>
+                    <input type="text" id="profileHobbies" placeholder="게임, 독서, 운동">
+                </div>
+                <div class="input-group">
+                    <label>프로필 사진 URL (선택):</label>
+                    <input type="text" id="profilePhotoUrl" placeholder="https://...">
+                </div>
+                <button class="btn" onclick="createProfile()">프로필 생성</button>
+                <div class="response" id="createProfileResult"></div>
+            </div>
+
+            <!-- 매칭 선호도 설정 -->
+            <div class="api-card">
+                <div class="api-title">
+                    <span class="method post">POST</span>
+                    매칭 선호도 설정
+                </div>
+                <div class="input-group">
+                    <label>선호 성별:</label>
+                    <select id="preferredGender">
+                        <option value="male">남성</option>
+                        <option value="female">여성</option>
+                        <option value="all">모두</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>최소 나이:</label>
+                    <input type="number" id="minAge" placeholder="20">
+                </div>
+                <div class="input-group">
+                    <label>최대 나이:</label>
+                    <input type="number" id="maxAge" placeholder="30">
+                </div>
+                <div class="input-group">
+                    <label>매칭 알고리즘:</label>
+                    <select id="matchingAlgorithm">
+                        <option value="random">랜덤</option>
+                        <option value="tempus_based">온도 기반</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="createMatchingPreference()">선호도 설정</button>
+                <div class="response" id="createMatchingPreferenceResult"></div>
+            </div>
+
+            <!-- 랜덤 매칭 실행 -->
+            <div class="api-card">
+                <div class="api-title">
+                    <span class="method post">POST</span>
+                    랜덤 매칭 실행
+                </div>
+                <button class="btn" onclick="executeRandomMatching()">매칭 시작</button>
+                <div class="response" id="randomMatchingResult"></div>
+            </div>
+
+            <!-- 채팅 시스템 -->
+            <div class="api-card">
+                <div class="api-title">
+                    <span class="method post">POST</span>
+                    메시지 전송
+                </div>
+                <div class="input-group">
+                    <label>현재 매칭 ID:</label>
+                    <input type="text" id="currentMatchingId" placeholder="매칭 후 자동 입력됨" readonly>
+                </div>
+                <div class="input-group">
+                    <label>메시지:</label>
+                    <textarea id="messageText" placeholder="메시지를 입력하세요..."></textarea>
+                </div>
+                <button class="btn" onclick="sendMessage()">메시지 전송</button>
+                <div class="response" id="sendMessageResult"></div>
+            </div>
+
+            <!-- 메시지 조회 -->
+            <div class="api-card">
+                <div class="api-title">
+                    <span class="method get">GET</span>
+                    메시지 조회
+                </div>
+                <button class="btn" onclick="getMessages()">메시지 조회</button>
+                <div class="response" id="getMessagesResult"></div>
+            </div>
+
+            <!-- 프로필 공개 정보 -->
+            <div class="api-card">
+                <div class="api-title">
+                    <span class="method get">GET</span>
+                    프로필 공개 정보
+                </div>
+                <button class="btn" onclick="getProfileRevealInfo()">공개 정보 조회</button>
+                <div class="response" id="profileRevealResult"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // 전역 변수
         let authToken = '';
@@ -778,12 +906,23 @@
         // HTTP 요청 헬퍼 함수
         async function makeRequest(url, options = {}) {
             try {
+                // body가 객체인 경우 JSON으로 변환
+                if (options.body && typeof options.body === 'object') {
+                    options.body = JSON.stringify(options.body);
+                }
+                
+                // 인증 헤더 디버깅
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+                    ...options.headers
+                };
+                
+                console.log('Request Headers:', headers); // 디버깅용
+                console.log('Auth Token:', authToken); // 디버깅용
+                
                 const response = await fetch(url, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
-                        ...options.headers
-                    },
+                    headers,
                     ...options
                 });
                 
@@ -1272,6 +1411,160 @@
             showResponse('checkFollowStatusResult', result.data, result.success);
         }
 
+        // 랜덤 매칭 시스템 API 함수들
+        async function createProfile() {
+            if (!authToken) {
+                showResponse('createProfileResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const profileData = {
+                height: parseInt(document.getElementById('profileHeight').value),
+                age: parseInt(document.getElementById('profileAge').value),
+                gender: document.getElementById('profileGender').value,
+                major: document.getElementById('profileMajor').value,
+                mbti: document.getElementById('profileMbti').value,
+                hobbies: document.getElementById('profileHobbies').value,
+                profilePhotoUrl: document.getElementById('profilePhotoUrl').value || undefined
+            };
+            
+            if (!profileData.height || !profileData.age || !profileData.gender || 
+                !profileData.major || !profileData.mbti || !profileData.hobbies) {
+                showResponse('createProfileResult', { error: '필수 정보를 모두 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/profile`, {
+                method: 'POST',
+                body: profileData  // 이제 객체를 직접 전달해도 됩니다
+            });
+            
+            showResponse('createProfileResult', result.data, result.success);
+        }
+
+        async function getProfile() {
+            if (!authToken) {
+                showResponse('getProfileResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/profile`);
+            showResponse('getProfileResult', result.data, result.success);
+        }
+
+        async function createMatchingPreference() {
+            if (!authToken) {
+                showResponse('createMatchingPreferenceResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const preferenceData = {
+                preferredGender: document.getElementById('preferredGender').value,
+                minAge: parseInt(document.getElementById('minAge').value) || undefined,
+                maxAge: parseInt(document.getElementById('maxAge').value) || undefined,
+                matchingAlgorithm: document.getElementById('matchingAlgorithm').value
+            };
+            
+            if (!preferenceData.preferredGender || !preferenceData.matchingAlgorithm) {
+                showResponse('createMatchingPreferenceResult', { error: '필수 정보를 모두 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/matching/preference`, {
+                method: 'POST',
+                body: preferenceData  // 이제 객체를 직접 전달해도 됩니다
+            });
+            
+            showResponse('createMatchingPreferenceResult', result.data, result.success);
+        }
+
+        async function executeRandomMatching() {
+            if (!authToken) {
+                showResponse('randomMatchingResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/matching/random`, {
+                method: 'POST'
+            });
+            
+            showResponse('randomMatchingResult', result.data, result.success);
+            
+            // 매칭 성공 시 매칭 ID 저장
+            if (result.success && result.data.matching) {
+                window.currentMatchingId = result.data.matching.id;
+                document.getElementById('currentMatchingId').value = result.data.matching.id;
+            }
+        }
+
+        async function sendMessage() {
+            if (!authToken) {
+                showResponse('sendMessageResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const matchingId = document.getElementById('currentMatchingId').value;
+            if (!matchingId) {
+                showResponse('sendMessageResult', { error: '매칭 ID가 필요합니다. 먼저 매칭을 진행해주세요.' }, false);
+                return;
+            }
+            
+            const messageData = {
+                message: document.getElementById('messageText').value,
+                messageType: 'text'
+            };
+            
+            if (!messageData.message) {
+                showResponse('sendMessageResult', { error: '메시지를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/chat/${matchingId}/messages`, {
+                method: 'POST',
+                body: messageData
+            });
+            
+            showResponse('sendMessageResult', result.data, result.success);
+            
+            if (result.success) {
+                document.getElementById('messageText').value = '';
+                // 메시지 전송 후 채팅방 메시지 조회
+                getMessages();
+            }
+        }
+
+        async function getMessages() {
+            if (!authToken) {
+                showResponse('getMessagesResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const matchingId = document.getElementById('currentMatchingId').value;
+            if (!matchingId) {
+                showResponse('getMessagesResult', { error: '매칭 ID가 필요합니다.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/chat/${matchingId}/messages`);
+            showResponse('getMessagesResult', result.data, result.success);
+        }
+
+        async function getProfileRevealInfo() {
+            if (!authToken) {
+                showResponse('profileRevealResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const matchingId = document.getElementById('currentMatchingId').value;
+            if (!matchingId) {
+                showResponse('profileRevealResult', { error: '매칭 ID가 필요합니다.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/chat/${matchingId}/profile-reveal`);
+            showResponse('profileRevealResult', result.data, result.success);
+        }
+
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
             updateAuthInfo();
@@ -1294,13 +1587,24 @@
             document.getElementById('itemName').value = '테스트 아이템';
             document.getElementById('itemDescription').value = '이것은 테스트 아이템입니다.';
             
+            // 랜덤 매칭 시스템 샘플 데이터
+            document.getElementById('profileHeight').value = '170';
+            document.getElementById('profileAge').value = '25';
+            document.getElementById('profileGender').value = 'male';
+            document.getElementById('profileMajor').value = '컴퓨터공학과';
+            document.getElementById('profileMbti').value = 'INTJ';
+            document.getElementById('profileHobbies').value = '게임, 독서, 운동';
+            
             // 디버깅용: 함수 존재 여부 확인
             console.log('Functions loaded:', {
                 handleCreateComment: typeof handleCreateComment,
                 getAllPosts: typeof getAllPosts,
                 makeRequest: typeof makeRequest,
                 createMyRoom: typeof createMyRoom,
-                followUser: typeof followUser
+                followUser: typeof followUser,
+                createProfile: typeof createProfile,
+                executeRandomMatching: typeof executeRandomMatching,
+                sendMessage: typeof sendMessage
             });
         });
     </script>

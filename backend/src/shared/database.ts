@@ -162,6 +162,87 @@ export class DatabaseConnection {
         )
       `);
       
+      // user_profiles 테이블 (랜덤 매칭용)
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS user_profiles (
+          id VARCHAR(36) PRIMARY KEY,
+          user_id VARCHAR(36) UNIQUE NOT NULL,
+          height INT NOT NULL,
+          age INT NOT NULL,
+          gender ENUM('male', 'female', 'other') NOT NULL,
+          major VARCHAR(100) NOT NULL,
+          mbti VARCHAR(4) NOT NULL,
+          hobbies TEXT NOT NULL,
+          profile_photo_url VARCHAR(255),
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      
+      // matching_preferences 테이블
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS matching_preferences (
+          id VARCHAR(36) PRIMARY KEY,
+          user_id VARCHAR(36) UNIQUE NOT NULL,
+          preferred_gender ENUM('male', 'female', 'all') NOT NULL,
+          min_age INT,
+          max_age INT,
+          matching_algorithm ENUM('random', 'tempus_based') NOT NULL DEFAULT 'random',
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      
+      // matchings 테이블
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS matchings (
+          id VARCHAR(36) PRIMARY KEY,
+          user1_id VARCHAR(36) NOT NULL,
+          user2_id VARCHAR(36) NOT NULL,
+          status ENUM('active', 'completed', 'blocked') NOT NULL DEFAULT 'active',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          expires_at TIMESTAMP NOT NULL,
+          INDEX idx_user1 (user1_id),
+          INDEX idx_user2 (user2_id),
+          FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      
+      // chat_messages 테이블
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS chat_messages (
+          id VARCHAR(36) PRIMARY KEY,
+          matching_id VARCHAR(36) NOT NULL,
+          sender_id VARCHAR(36) NOT NULL,
+          message TEXT NOT NULL,
+          message_type ENUM('text', 'image') NOT NULL DEFAULT 'text',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_matching (matching_id),
+          INDEX idx_sender (sender_id),
+          FOREIGN KEY (matching_id) REFERENCES matchings(id) ON DELETE CASCADE,
+          FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      
+      // user_blocks 테이블
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS user_blocks (
+          id VARCHAR(36) PRIMARY KEY,
+          blocker_id VARCHAR(36) NOT NULL,
+          user_id VARCHAR(36) NOT NULL,
+          reason TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE KEY unique_block (blocker_id, user_id),
+          FOREIGN KEY (blocker_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      
       console.log('✅ Database tables created successfully');
     } catch (error) {
       console.error('❌ Failed to create database tables:', error);

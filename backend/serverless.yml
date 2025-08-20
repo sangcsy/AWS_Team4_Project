@@ -1,10 +1,10 @@
-service: tempus-backend
+service: kusj-pj-4-lambda
 
 frameworkVersion: '3'
 
 provider:
   name: aws
-  runtime: nodejs22.x
+  runtime: nodejs18.x
   region: us-east-1
   stage: ${opt:stage, 'dev'}
   environment:

@@ -10,6 +10,11 @@ const commentRoutes = require('./interfaces/routes/commentRoutes');
 const myroomRoutes = require('./interfaces/routes/myroomRoutes');
 const followRoutes = require('./interfaces/routes/followRoutes');
 
+// 랜덤 매칭 시스템 라우터 import
+const profileRoutes = require('./interfaces/routes/profile/profileRoutes');
+const matchingRoutes = require('./interfaces/routes/matching/matchingRoutes');
+const chatRoutes = require('./interfaces/routes/chat/chatRoutes');
+
 const app = express();
 const PORT = process.env['PORT'] || 3000;
 
@@ -59,6 +64,11 @@ app.use('/api/posts', postRoutes);
 app.use('/api', commentRoutes);
 app.use('/api/myroom', myroomRoutes);
 app.use('/api/follow', followRoutes);
+
+// 랜덤 매칭 시스템 API 라우터
+app.use('/api/profile', profileRoutes);
+app.use('/api/matching', matchingRoutes);
+app.use('/api/chat', chatRoutes);
 
 // 404 핸들러
 app.use('*', (req, res) => {
