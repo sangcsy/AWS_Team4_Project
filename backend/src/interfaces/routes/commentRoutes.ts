@@ -1,8 +1,8 @@
-const { Router } = require('express');
-const { CommentController } = require('../controllers/CommentController');
-const { authMiddleware } = require('../middlewares/authMiddleware');
+import express from 'express';
+import { CommentController } from '../controllers/CommentController';
+import { authMiddleware } from '../middlewares/authMiddleware';
 
-const router = Router();
+const router = express.Router();
 const commentController = new CommentController();
 
 // 댓글 작성 (인증 필요)
@@ -22,4 +22,4 @@ router.delete('/comments/:id', authMiddleware, commentController.deleteComment);
 // 댓글 온도 업데이트 (인증 불필요)
 router.patch('/comments/:id/temperature', commentController.updateCommentTemperature);
 
-module.exports = router;
+export default router;

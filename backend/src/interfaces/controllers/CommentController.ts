@@ -1,13 +1,15 @@
-const { CommentService } = require('../../application/comment/CommentService');
-const { CommentRepositoryImpl } = require('../../infrastructure/comment/CommentRepositoryImpl');
+import { CommentService } from '../../application/comment/CommentService';
+import { CommentRepositoryImpl } from '../../infrastructure/comment/CommentRepositoryImpl';
 
 class CommentController {
+  private commentService: CommentService;
+
   constructor() {
     const commentRepository = new CommentRepositoryImpl();
     this.commentService = new CommentService(commentRepository);
   }
 
-  createComment = async (req, res) => {
+  createComment = async (req: any, res: any) => {
     try {
       const { content, temperature_change } = req.body;
       const { postId } = req.params;
@@ -27,7 +29,7 @@ class CommentController {
         message: '댓글이 작성되었습니다.',
         data: comment
       });
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).json({
         success: false,
         error: error.message
@@ -35,7 +37,7 @@ class CommentController {
     }
   };
 
-  getCommentById = async (req, res) => {
+  getCommentById = async (req: any, res: any) => {
     try {
       const { id } = req.params;
 
@@ -51,7 +53,7 @@ class CommentController {
         success: true,
         data: comment
       });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({
         success: false,
         error: error.message
@@ -59,7 +61,7 @@ class CommentController {
     }
   };
 
-  getCommentsByPost = async (req, res) => {
+  getCommentsByPost = async (req: any, res: any) => {
     try {
       const { postId } = req.params;
       const page = parseInt(req.query.page) || 1;
@@ -73,7 +75,7 @@ class CommentController {
         success: true,
         data: result
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('CommentController.getCommentsByPost - error:', error); // 디버깅용
       res.status(500).json({
         success: false,
@@ -82,7 +84,7 @@ class CommentController {
     }
   };
 
-  getCommentsByUser = async (req, res) => {
+  getCommentsByUser = async (req: any, res: any) => {
     try {
       const { userId } = req.params;
       const page = parseInt(req.query.page) || 1;
@@ -94,7 +96,7 @@ class CommentController {
         success: true,
         data: result
       });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({
         success: false,
         error: error.message
@@ -184,4 +186,4 @@ class CommentController {
   };
 }
 
-module.exports = { CommentController };
+export { CommentController };

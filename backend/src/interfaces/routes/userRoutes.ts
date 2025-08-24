@@ -1,8 +1,8 @@
-const { Router } = require('express');
-const { UserController } = require('../controllers/UserController');
-const { authMiddleware } = require('../middlewares/authMiddleware');
+import express from 'express';
+import { UserController } from '../controllers/UserController';
+import { authMiddleware } from '../middlewares/authMiddleware';
 
-const router = Router();
+const router = express.Router();
 const userController = new UserController();
 
 // 회원가입
@@ -14,10 +14,10 @@ router.post('/login', userController.login);
 // 닉네임 중복 확인
 router.get('/check-nickname', userController.checkNickname);
 
-// 내 온도 조회 (인증 필요)
-router.get('/temperature', authMiddleware, userController.getMyTemperature);
-
 // 사용자 검색 (인증 필요)
 router.get('/search', authMiddleware, userController.searchUsers);
 
-module.exports = router;
+// 사용자 프로필 조회 (인증 필요)
+router.get('/profile/:userId', authMiddleware, userController.getUserProfile);
+
+export default router;

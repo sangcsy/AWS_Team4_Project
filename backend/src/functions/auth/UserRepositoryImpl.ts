@@ -1,6 +1,6 @@
 import { User } from '../../shared/types';
 import { UserRepository } from './UserRepository';
-import DatabaseConnection from '../../shared/database';
+import { DatabaseConnection } from '../../shared/database';
 
 export class UserRepositoryImpl implements UserRepository {
   private db = DatabaseConnection.getInstance();
@@ -21,7 +21,8 @@ export class UserRepositoryImpl implements UserRepository {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
     
-    await this.db.query(sql, [
+    const pool = await this.db.getPool();
+    await pool.execute(sql, [
       user.id,
       user.email,
       user.password_hash,
@@ -36,27 +37,30 @@ export class UserRepositoryImpl implements UserRepository {
 
   async findByEmail(email: string): Promise<User | null> {
     const sql = 'SELECT * FROM users WHERE email = ?';
-    const users = await this.db.query<User>(sql, [email]);
-    return users.length > 0 ? users[0] : null;
+    const pool = await this.db.getPool();
+    const [rows] = await pool.execute(sql, [email]) as [any[], any];
+    return rows.length > 0 ? rows[0] as User : null;
   }
 
   async findByNickname(nickname: string): Promise<User | null> {
     const sql = 'SELECT * FROM users WHERE nickname = ?';
-    const users = await this.db.query<User>(sql, [nickname]);
-    return users.length > 0 ? users[0] : null;
+    const pool = await this.db.getPool();
+    const [rows] = await pool.execute(sql, [nickname]) as [any[], any];
+    return rows.length > 0 ? rows[0] as User : null;
   }
 
-  // 사용자 검색 메서드 구현
   async searchByNickname(searchQuery: string): Promise<User[]> {
     const sql = 'SELECT * FROM users WHERE nickname LIKE ? ORDER BY nickname LIMIT 20';
-    const users = await this.db.query<User>(sql, [`%${searchQuery}%`]);
-    return users;
+    const pool = await this.db.getPool();
+    const [rows] = await pool.execute(sql, [`%${searchQuery}%`]) as [any[], any];
+    return rows as User[];
   }
 
   async findById(id: string): Promise<User | null> {
     const sql = 'SELECT * FROM users WHERE id = ?';
-    const users = await this.db.query<User>(sql, [id]);
-    return users.length > 0 ? users[0] : null;
+    const pool = await this.db.getPool();
+    const [rows] = await pool.execute(sql, [id]) as [any[], any];
+    return rows.length > 0 ? rows[0] as User : null;
   }
 
   async updateUser(id: string, updates: Partial<User>): Promise<User> {
@@ -67,7 +71,8 @@ export class UserRepositoryImpl implements UserRepository {
     const sql = `UPDATE users SET ${updateFields.join(', ')}, updated_at = ? WHERE id = ?`;
     const values = [...Object.values(updates).filter((_, index) => index !== 0), new Date(), id];
     
-    await this.db.query(sql, values);
+    const pool = await this.db.getPool();
+    await pool.execute(sql, values);
     
     const updatedUser = await this.findById(id);
     if (!updatedUser) {

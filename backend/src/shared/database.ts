@@ -261,6 +261,26 @@ export class DatabaseConnection {
         )
       `);
       
+      // notifications 테이블 (알림 시스템)
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS notifications (
+          id VARCHAR(36) PRIMARY KEY,
+          user_id VARCHAR(36) NOT NULL,
+          type ENUM('like', 'comment', 'follow', 'mention', 'system') NOT NULL,
+          title VARCHAR(255) NOT NULL,
+          message TEXT NOT NULL,
+          related_post_id VARCHAR(36),
+          related_user_id VARCHAR(36),
+          is_read BOOLEAN DEFAULT false,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (related_post_id) REFERENCES posts(id) ON DELETE CASCADE,
+          FOREIGN KEY (related_user_id) REFERENCES users(id) ON DELETE CASCADE,
+          INDEX idx_user_read (user_id, is_read),
+          INDEX idx_created_at (created_at)
+        )
+      `);
+      
       console.log('✅ Database tables created successfully');
     } catch (error) {
       console.error('❌ Failed to create database tables:', error);

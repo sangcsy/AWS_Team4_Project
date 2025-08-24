@@ -95,6 +95,33 @@ export class UserService {
     return users;
   }
 
+  // 사용자 프로필 조회 메서드 추가
+  async getUserProfile(userId: string): Promise<any> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new Error('USER_NOT_FOUND');
+    }
+
+    // 사용자의 게시글 수, 좋아요 수 등 통계 정보도 포함
+    // (PostRepository에서 관련 메서드 호출 필요)
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname,
+        temperature: user.temperature,
+        created_at: user.created_at,
+        updated_at: user.updated_at
+      },
+      stats: {
+        total_posts: 0, // TODO: PostRepository에서 구현
+        total_likes: 0, // TODO: PostRepository에서 구현
+        total_followers: 0, // TODO: FollowRepository에서 구현
+        total_following: 0 // TODO: FollowRepository에서 구현
+      }
+    };
+  }
+
   private generateToken(user: User): string {
     const payload = {
       id: user.id,

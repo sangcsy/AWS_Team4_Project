@@ -1,6 +1,6 @@
-const express = require('express');
-const { FollowController } = require('../controllers/FollowController');
-const { authMiddleware } = require('../middlewares/authMiddleware');
+import express from 'express';
+import { FollowController } from '../controllers/FollowController';
+import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = express.Router();
 const followController = new FollowController();
@@ -25,4 +25,4 @@ router.get('/info/:userId', authMiddleware, followController.getUserFollowInfo);
 // 상호 팔로우 (친구 관계)
 router.get('/mutual/:userId', followController.getMutualFollows);
 
-module.exports = router;
+export default router;

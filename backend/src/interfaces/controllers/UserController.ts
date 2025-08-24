@@ -1,14 +1,16 @@
-const { UserService } = require('../../application/user/UserService');
-const { UserRepositoryImpl } = require('../../infrastructure/user/UserRepositoryImpl');
-const jwt = require('jsonwebtoken');
+import { UserService } from '../../functions/auth/UserService';
+import { UserRepositoryImpl } from '../../functions/auth/UserRepositoryImpl';
+import jwt from 'jsonwebtoken';
 
 class UserController {
+  private userService: UserService;
+
   constructor() {
     const userRepository = new UserRepositoryImpl();
     this.userService = new UserService(userRepository);
   }
 
-  register = async (req, res) => {
+  register = async (req: any, res: any) => {
     try {
       const { email, password, nickname } = req.body;
 
@@ -20,11 +22,11 @@ class UserController {
         });
       }
 
-      const user = await this.userService.register({ email, password, nickname });
+      const authResponse = await this.userService.register(email, password, nickname);
       
       // JWT 토큰 생성
       const token = jwt.sign(
-        { userId: user.id, email: user.email },
+        { userId: authResponse.user.id, email: authResponse.user.email },
         process.env['JWT_SECRET'] || 'your_jwt_secret',
         { expiresIn: '24h' }
       );
@@ -33,11 +35,11 @@ class UserController {
         success: true,
         message: '회원가입이 완료되었습니다.',
         data: {
-          user,
+          user: authResponse.user,
           token
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).json({
         success: false,
         error: error.message
@@ -45,7 +47,7 @@ class UserController {
     }
   };
 
-  login = async (req, res) => {
+  login = async (req: any, res: any) => {
     try {
       const { email, password } = req.body;
 
@@ -57,11 +59,11 @@ class UserController {
         });
       }
 
-      const user = await this.userService.login({ email, password });
+      const authResponse = await this.userService.login(email, password);
       
       // JWT 토큰 생성
       const token = jwt.sign(
-        { userId: user.id, email: user.email },
+        { userId: authResponse.user.id, email: authResponse.user.email },
         process.env['JWT_SECRET'] || 'your_jwt_secret',
         { expiresIn: '24h' }
       );
@@ -70,11 +72,11 @@ class UserController {
         success: true,
         message: '로그인이 완료되었습니다.',
         data: {
-          user,
+          user: authResponse.user,
           token
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       res.status(401).json({
         success: false,
         error: error.message
@@ -82,7 +84,7 @@ class UserController {
     }
   };
 
-  checkNickname = async (req, res) => {
+  checkNickname = async (req: any, res: any) => {
     try {
       const { nickname } = req.query;
 
@@ -93,44 +95,16 @@ class UserController {
         });
       }
 
-      const isAvailable = await this.userService.checkNickname(nickname);
+      const isAvailable = await this.userService.isNicknameAvailable(nickname);
 
       res.json({
         success: true,
         data: {
-          nickname,
           isAvailable
         }
       });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  };
-
-  getMyTemperature = async (req, res) => {
-    try {
-      const userId = req.user?.userId;
-      
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: '인증이 필요합니다.'
-        });
-      }
-
-      const temperature = await this.userService.getMyTemperature(userId);
-
-      res.json({
-        success: true,
-        data: {
-          temperature
-        }
-      });
-    } catch (error) {
-      res.status(500).json({
+    } catch (error: any) {
+      res.status(400).json({
         success: false,
         error: error.message
       });
@@ -138,10 +112,10 @@ class UserController {
   };
 
   // 사용자 검색 메서드 추가
-  searchUsers = async (req, res) => {
+  searchUsers = async (req: any, res: any) => {
     try {
-      const { q } = req.query; // 검색어
-      
+      const { q } = req.query;
+
       if (!q || typeof q !== 'string') {
         return res.status(400).json({
           success: false,
@@ -157,7 +131,40 @@ class UserController {
           users
         }
       });
-    } catch (error) {
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  };
+
+  // 사용자 프로필 조회 메서드 추가
+  getUserProfile = async (req: any, res: any) => {
+    try {
+      const { userId } = req.params;
+      
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          error: '사용자 ID가 필요합니다.'
+        });
+      }
+
+      const profile = await this.userService.getUserProfile(userId);
+
+      if (!profile) {
+        return res.status(404).json({
+          success: false,
+          error: '사용자를 찾을 수 없습니다.'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: profile
+      });
+    } catch (error: any) {
       res.status(500).json({
         success: false,
         error: error.message
@@ -166,4 +173,4 @@ class UserController {
   };
 }
 
-module.exports = { UserController };
+export { UserController };

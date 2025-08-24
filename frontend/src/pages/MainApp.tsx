@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, Routes, Route, useParams } from 'react-router-dom';
+import UserProfile from './UserProfile';
+import NotificationBell from '../components/NotificationBell';
+import './MainApp.css';
 
 type Post = {
   id: string
@@ -802,7 +805,7 @@ export default function MainApp() {
       const token = localStorage.getItem('token')
       
       // 팔로잉 목록 로드
-      const followingResponse = await fetch('http://localhost:3000/api/users/following', {
+      const followingResponse = await fetch(`http://localhost:3000/api/follow/following/${currentUser?.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -811,13 +814,14 @@ export default function MainApp() {
       if (followingResponse.ok) {
         const followingData = await followingResponse.json()
         if (followingData.success) {
-          setFollowingList(followingData.data.following || [])
-          console.log('✅ 팔로잉 목록 로드 성공:', followingData.data.following)
+          const followingIds = followingData.data.following?.map((f: any) => f.following_id) || []
+          setFollowingList(followingIds)
+          console.log('✅ 팔로잉 목록 로드 성공:', followingIds)
         }
       }
       
       // 팔로워 목록 로드
-      const followersResponse = await fetch('http://localhost:3000/api/users/followers', {
+      const followersResponse = await fetch(`http://localhost:3000/api/follow/followers/${currentUser?.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -826,8 +830,9 @@ export default function MainApp() {
       if (followersResponse.ok) {
         const followersData = await followersResponse.json()
         if (followersData.success) {
-          setFollowersList(followersData.data.followers || [])
-          console.log('✅ 팔로워 목록 로드 성공:', followersData.data.followers)
+          const followerIds = followersData.data.followers?.map((f: any) => f.follower_id) || []
+          setFollowersList(followerIds)
+          console.log('✅ 팔로워 목록 로드 성공:', followerIds)
         }
       }
     } catch (error) {
@@ -843,11 +848,17 @@ export default function MainApp() {
       const token = localStorage.getItem('token')
       const isCurrentlyFollowing = followingList.includes(targetUserId)
       
-      const response = await fetch(`http://localhost:3000/api/users/${targetUserId}/follow`, {
+      const url = isCurrentlyFollowing 
+        ? `http://localhost:3000/api/follow/${targetUserId}`
+        : 'http://localhost:3000/api/follow';
+      
+      const response = await fetch(url, {
         method: isCurrentlyFollowing ? 'DELETE' : 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: isCurrentlyFollowing ? undefined : JSON.stringify({ followingId: targetUserId })
       })
       
       if (response.ok) {
@@ -952,10 +963,8 @@ export default function MainApp() {
 
   // 사용자 프로필 방문
   const visitUserProfile = (userId: string, nickname: string) => {
-    // 마이룸 페이지로 이동 (나중에 구현)
-    console.log(`사용자 ${nickname}의 마이룸 방문: ${userId}`)
-    // navigate(`/profile/${userId}`) // 나중에 구현
-    alert(`${nickname}님의 마이룸으로 이동합니다! (기능 준비 중)`)
+    // 프로필 페이지로 이동
+    navigate(`/profile/${userId}`)
   }
 
   return (
@@ -982,7 +991,7 @@ export default function MainApp() {
         </div>
 
         <div className="top-actions">
-          <button className="chip">🔔 알림</button>
+          <NotificationBell userId={currentUser?.id} />
           <button 
             className="chip" 
             onClick={() => navigate('/profile')}

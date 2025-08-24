@@ -1,8 +1,8 @@
-const { Router } = require('express');
-const { PostController } = require('../controllers/PostController');
-const { authMiddleware } = require('../middlewares/authMiddleware');
+import express from 'express';
+import { PostController } from '../controllers/PostController';
+import { authMiddleware } from '../middlewares/authMiddleware';
 
-const router = Router();
+const router = express.Router();
 const postController = new PostController();
 
 // 게시글 작성 (인증 필요)
@@ -26,4 +26,4 @@ router.patch('/:id/temperature', postController.updatePostTemperature);
 // 좋아요 토글 (인증 필요)
 router.post('/:id/like', authMiddleware, postController.toggleLike);
 
-module.exports = router;
+export default router;

@@ -1,21 +1,16 @@
-require('dotenv').config();
-
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const { createTables, testConnection } = require('./shared/database');
-
-// 실제 라우터 import
-const userRoutes = require('./interfaces/routes/userRoutes');
-const postRoutes = require('./interfaces/routes/postRoutes');
-const commentRoutes = require('./interfaces/routes/commentRoutes');
-const myroomRoutes = require('./interfaces/routes/myroomRoutes');
-const followRoutes = require('./interfaces/routes/followRoutes');
-
-// 랜덤 매칭 시스템 라우터 import
-const profileRoutes = require('./interfaces/routes/profile/profileRoutes');
-const matchingRoutes = require('./interfaces/routes/matching/matchingRoutes');
-const chatRoutes = require('./interfaces/routes/chat/chatRoutes');
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import { createTables, testConnection } from './shared/database';
+import userRoutes from './interfaces/routes/userRoutes';
+import postRoutes from './interfaces/routes/postRoutes';
+import commentRoutes from './interfaces/routes/commentRoutes';
+import myRoomRoutes from './interfaces/routes/myRoomRoutes';
+import followRoutes from './interfaces/routes/followRoutes';
+import notificationRoutes from './interfaces/routes/notificationRoutes';
+// import profileRoutes from './interfaces/routes/profileRoutes';
+// import matchingRoutes from './interfaces/routes/matchingRoutes';
+// import chatRoutes from './interfaces/routes/chatRoutes';
 
 const app = express();
 const PORT = process.env['PORT'] || 3000;
@@ -64,13 +59,180 @@ app.get('/api/health/db', async (req, res) => {
 app.use('/api/auth', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api', commentRoutes);
-app.use('/api/myroom', myroomRoutes);
+app.use('/api/myroom', myRoomRoutes);
 app.use('/api/follow', followRoutes);
+app.use('/api/notifications', notificationRoutes);
+
+// Mock API 엔드포인트들
+app.get('/api/posts', (req, res) => {
+  // Mock 게시글 데이터
+  const mockPosts = [
+    {
+      id: 'post_1',
+      user_id: 'user_1',
+      title: '안녕하세요!',
+      content: '첫 번째 게시글입니다.',
+      category: '자유',
+      temperature_change: 0,
+      likes: 5,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      user: {
+        nickname: '테스트유저',
+        temperature: 36.5,
+        email: 'test@example.com'
+      }
+    }
+  ];
+  
+  res.json({
+    success: true,
+    data: {
+      posts: mockPosts
+    }
+  });
+});
+
+app.get('/api/follow/following/:userId', (req, res) => {
+  const { userId } = req.params;
+  if (userId === 'undefined') {
+    return res.status(400).json({
+      success: false,
+      error: '사용자 ID가 필요합니다.'
+    });
+  }
+  
+  // Mock 팔로잉 데이터
+  res.json({
+    success: true,
+    data: {
+      following: []
+    }
+  });
+});
+
+app.get('/api/follow/followers/:userId', (req, res) => {
+  const { userId } = req.params;
+  if (userId === 'undefined') {
+    return res.status(400).json({
+      success: false,
+      error: '사용자 ID가 필요합니다.'
+    });
+  }
+  
+  // Mock 팔로워 데이터
+  res.json({
+    success: true,
+    data: {
+      followers: []
+    }
+  });
+});
+
+app.post('/api/follow', (req, res) => {
+  // Mock 팔로우 성공
+  res.json({
+    success: true,
+    message: '팔로우 성공'
+  });
+});
+
+app.delete('/api/follow/:followingId', (req, res) => {
+  // Mock 언팔로우 성공
+  res.json({
+    success: true,
+    message: '언팔로우 성공'
+  });
+});
+
+app.get('/api/follow/check/:followingId', (req, res) => {
+  // Mock 팔로우 상태 확인
+  res.json({
+    success: true,
+    data: {
+      isFollowing: false
+    }
+  });
+});
+
+// Mock 사용자 프로필 API 추가
+app.get('/api/users/profile/:userId', (req, res) => {
+  const { userId } = req.params;
+  
+  if (!userId) {
+    return res.status(400).json({
+      success: false,
+      error: '사용자 ID가 필요합니다.'
+    });
+  }
+
+  // Mock 사용자 프로필 데이터
+  const mockProfile = {
+    user: {
+      id: userId,
+      email: 'test@example.com',
+      nickname: '테스트유저',
+      temperature: 36.5,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    stats: {
+      total_posts: 1,
+      total_likes: 5,
+      total_followers: 0,
+      total_following: 0
+    }
+  };
+
+  res.json({
+    success: true,
+    data: mockProfile
+  });
+});
+
+// Mock 사용자 게시글 API 추가
+app.get('/api/posts/user/:userId', (req, res) => {
+  const { userId } = req.params;
+  
+  if (!userId) {
+    return res.status(400).json({
+      success: false,
+      error: '사용자 ID가 필요합니다.'
+    });
+  }
+
+  // Mock 사용자 게시글 데이터
+  const mockUserPosts = [
+    {
+      id: 'post_1',
+      user_id: userId,
+      title: '안녕하세요!',
+      content: '첫 번째 게시글입니다.',
+      category: '자유',
+      temperature_change: 0,
+      likes: 5,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      user: {
+        nickname: '테스트유저',
+        temperature: 36.5,
+        email: 'test@example.com'
+      }
+    }
+  ];
+
+  res.json({
+    success: true,
+    data: {
+      posts: mockUserPosts
+    }
+  });
+});
 
 // 랜덤 매칭 시스템 API 라우터
-app.use('/api/profile', profileRoutes);
-app.use('/api/matching', matchingRoutes);
-app.use('/api/chat', chatRoutes);
+// app.use('/api/profile', profileRoutes);
+// app.use('/api/matching', matchingRoutes);
+// app.use('/api/chat', chatRoutes);
 
 // 404 핸들러
 app.use('*', (req, res) => {

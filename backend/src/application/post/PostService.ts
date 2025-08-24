@@ -1,9 +1,16 @@
 import { v4 as uuidv4 } from 'uuid';
 import { PostRepository } from '../../domain/post/PostRepository';
 import { Post, CreatePostRequest, UpdatePostRequest, PostResponse, PostListResponse } from '../../domain/post/Post';
+import { NotificationService } from '../../functions/auth/NotificationService';
+import { NotificationRepositoryImpl } from '../../functions/auth/NotificationRepositoryImpl';
 
 export class PostService {
-  constructor(private postRepository: PostRepository) {}
+  private notificationService: NotificationService;
+
+  constructor(private postRepository: PostRepository) {
+    const notificationRepository = new NotificationRepositoryImpl();
+    this.notificationService = new NotificationService(notificationRepository);
+  }
 
   async createPost(postData: CreatePostRequest, userId: string): Promise<PostResponse> {
     // 제목과 내용 검증
@@ -118,6 +125,28 @@ export class PostService {
 
     // 좋아요 상태 확인 및 토글
     const result = await this.postRepository.toggleLike(postId, userId);
+    
+    // 좋아요를 눌렀다면 알림 생성 (자신의 게시글에는 알림 생성하지 않음)
+    if (result.liked && existingPost.user_id !== userId) {
+      try {
+        // 사용자 정보 조회 (닉네임 가져오기)
+        const userRepository = new (await import('../../functions/auth/UserRepositoryImpl')).UserRepositoryImpl();
+        const liker = await userRepository.findById(userId);
+        
+        if (liker) {
+          await this.notificationService.createLikeNotification(
+            postId,
+            existingPost.user_id,
+            userId,
+            liker.nickname
+          );
+        }
+      } catch (error) {
+        console.error('좋아요 알림 생성 실패:', error);
+        // 알림 생성 실패는 좋아요 기능에 영향을 주지 않음
+      }
+    }
+    
     return result;
   }
 

@@ -24,6 +24,55 @@ export interface AuthResponse {
   token: string;
 }
 
+export interface Post {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  category?: string;
+  temperature_change: number;
+  likes: number;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface Comment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  created_at: Date;
+}
+
+export interface Follow {
+  id: string;
+  follower_id: string;
+  following_id: string;
+  created_at: Date;
+}
+
+// 알림 시스템 타입 정의
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'like' | 'comment' | 'follow' | 'mention' | 'system';
+  title: string;
+  message: string;
+  related_post_id?: string;
+  related_user_id?: string;
+  is_read: boolean;
+  created_at: Date;
+}
+
+export interface NotificationCreateData {
+  user_id: string;
+  type: 'like' | 'comment' | 'follow' | 'mention' | 'system';
+  title: string;
+  message: string;
+  related_post_id?: string;
+  related_user_id?: string;
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
