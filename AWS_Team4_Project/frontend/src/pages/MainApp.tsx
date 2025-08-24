@@ -96,6 +96,7 @@ export default function MainApp() {
             <a className="menu-item">📈 트렌딩</a>
             <a className="menu-item">🛍 재능마켓</a>
             <a className="menu-item">💬 커뮤니티</a>
+            <Link to="/random-chat" className="menu-item">🎲 랜덤 채팅</Link>
           </nav>
 
           {/* 작성 박스 (입력 + 카테고리 + 버튼) */}
