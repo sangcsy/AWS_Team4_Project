@@ -136,6 +136,34 @@ class UserController {
       });
     }
   };
+
+  // 사용자 검색 메서드 추가
+  searchUsers = async (req, res) => {
+    try {
+      const { q } = req.query; // 검색어
+      
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: '검색어를 입력해주세요.'
+        });
+      }
+
+      const users = await this.userService.searchUsers(q);
+
+      res.json({
+        success: true,
+        data: {
+          users
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  };
 }
 
 module.exports = { UserController };

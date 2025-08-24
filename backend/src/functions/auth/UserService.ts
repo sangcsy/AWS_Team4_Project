@@ -89,6 +89,12 @@ export class UserService {
     return await this.userRepository.findById(id);
   }
 
+  // 사용자 검색 메서드 추가
+  async searchUsers(searchQuery: string): Promise<User[]> {
+    const users = await this.userRepository.searchByNickname(searchQuery);
+    return users;
+  }
+
   private generateToken(user: User): string {
     const payload = {
       id: user.id,

@@ -5,6 +5,7 @@ export interface UserRepository {
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
   findByNickname(nickname: string): Promise<User | null>;
+  searchByNickname(searchQuery: string): Promise<User[]>; // 사용자 검색 메서드 추가
   update(id: string, updates: UpdateUserRequest): Promise<User>;
   delete(id: string): Promise<void>;
   updateTemperature(id: string, temperatureChange: number): Promise<User>;

@@ -61,6 +61,12 @@ class UserService {
     return user.temperature;
   }
 
+  // 사용자 검색 메서드 추가
+  async searchUsers(searchQuery) {
+    const users = await this.userRepository.searchByNickname(searchQuery);
+    return users.map(user => this.toUserResponse(user));
+  }
+
   async updateTemperature(userId, temperatureChange) {
     const user = await this.userRepository.updateTemperature(userId, temperatureChange);
     return this.toUserResponse(user);

@@ -46,6 +46,13 @@ export class UserRepositoryImpl implements UserRepository {
     return users.length > 0 ? users[0] : null;
   }
 
+  // 사용자 검색 메서드 구현
+  async searchByNickname(searchQuery: string): Promise<User[]> {
+    const sql = 'SELECT * FROM users WHERE nickname LIKE ? ORDER BY nickname LIMIT 20';
+    const users = await this.db.query<User>(sql, [`%${searchQuery}%`]);
+    return users;
+  }
+
   async findById(id: string): Promise<User | null> {
     const sql = 'SELECT * FROM users WHERE id = ?';
     const users = await this.db.query<User>(sql, [id]);

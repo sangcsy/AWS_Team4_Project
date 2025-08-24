@@ -17,4 +17,7 @@ router.get('/check-nickname', userController.checkNickname);
 // 내 온도 조회 (인증 필요)
 router.get('/temperature', authMiddleware, userController.getMyTemperature);
 
+// 사용자 검색 (인증 필요)
+router.get('/search', authMiddleware, userController.searchUsers);
+
 module.exports = router;

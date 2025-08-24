@@ -92,6 +92,25 @@ class UserRepositoryImpl {
     };
   }
 
+  // 사용자 검색 메서드 추가
+  async searchByNickname(searchQuery) {
+    const pool = await databaseConnection.getPool();
+    const [rows] = await pool.execute(
+      'SELECT * FROM users WHERE nickname LIKE ? ORDER BY nickname LIMIT 20',
+      [`%${searchQuery}%`]
+    );
+
+    return rows.map(row => ({
+      id: row.id,
+      email: row.email,
+      password_hash: row.password_hash,
+      nickname: row.nickname,
+      temperature: parseFloat(row.temperature),
+      created_at: new Date(row.created_at),
+      updated_at: new Date(row.updated_at)
+    }));
+  }
+
   async update(id, updates) {
     const pool = await databaseConnection.getPool();
     const now = new Date();

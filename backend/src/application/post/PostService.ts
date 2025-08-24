@@ -43,11 +43,11 @@ export class PostService {
     };
   }
 
-  async getAllPosts(page: number = 1, limit: number = 10): Promise<PostListResponse> {
+  async getAllPosts(page: number = 1, limit: number = 10, currentUserId?: string): Promise<PostListResponse> {
     try {
-      console.log('PostService.getAllPosts - params:', { page, limit }); // 디버깅용
+      console.log('PostService.getAllPosts - params:', { page, limit, currentUserId }); // 디버깅용
       
-      const result = await this.postRepository.findAll(page, limit);
+      const result = await this.postRepository.findAll(page, limit, currentUserId);
       
       const posts = result.posts.map(post => this.toPostResponse(post));
       
@@ -108,6 +108,37 @@ export class PostService {
     return this.toPostResponse(post);
   }
 
+  // 좋아요 토글
+  async toggleLike(postId: string, userId: string): Promise<{ liked: boolean; likes: number }> {
+    // 게시글 존재 확인
+    const existingPost = await this.postRepository.findById(postId);
+    if (!existingPost) {
+      throw new Error('게시글을 찾을 수 없습니다.');
+    }
+
+    // 좋아요 상태 확인 및 토글
+    const result = await this.postRepository.toggleLike(postId, userId);
+    return result;
+  }
+
+  // 게시글 검색
+  async searchPosts(query: string): Promise<PostListResponse> {
+    if (!query.trim()) {
+      throw new Error('검색어를 입력해주세요.');
+    }
+
+    const result = await this.postRepository.searchPosts(query);
+    
+    const posts = result.posts.map(post => this.toPostResponse(post));
+    
+    return {
+      posts,
+      total: result.total,
+      page: 1,
+      limit: result.posts.length
+    };
+  }
+
   private toPostResponse(post: Post): PostResponse {
     return {
       id: post.id,
@@ -116,7 +147,15 @@ export class PostService {
       content: post.content,
       temperature_change: post.temperature_change,
       created_at: post.created_at,
-      updated_at: post.updated_at
+      updated_at: post.updated_at,
+      user: post.user || {
+        nickname: '알 수 없음',
+        temperature: 36.5,
+        email: ''
+      },
+      likes: post.likes || 0,
+      isLiked: post.isLiked || false,
+      comments: post.comments || []
     };
   }
 }

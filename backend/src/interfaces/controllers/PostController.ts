@@ -62,20 +62,21 @@ class PostController {
     try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
+      const currentUserId = req.user?.id; // JWT에서 사용자 ID 추출
       
-      console.log('PostController.getAllPosts - params:', { page, limit }); // 디버깅용
-
-      const result = await this.postService.getAllPosts(page, limit);
-
+      console.log('PostController.getAllPosts - params:', { page, limit, currentUserId });
+      
+      const result = await this.postService.getAllPosts(page, limit, currentUserId);
+      
       res.json({
         success: true,
         data: result
       });
     } catch (error) {
-      console.error('PostController.getAllPosts - error:', error); // 디버깅용
+      console.error('PostController.getAllPosts - error:', error);
       res.status(500).json({
         success: false,
-        error: error.message
+        error: '게시글 목록을 가져오는데 실패했습니다.'
       });
     }
   };
@@ -175,6 +176,60 @@ class PostController {
       });
     } catch (error) {
       res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+  };
+
+  // 좋아요 토글
+  toggleLike = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          error: '인증이 필요합니다.'
+        });
+      }
+
+      const result = await this.postService.toggleLike(id, userId);
+
+      res.json({
+        success: true,
+        message: result.liked ? '좋아요를 눌렀습니다.' : '좋아요를 취소했습니다.',
+        data: result
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+  };
+
+  // 게시글 검색
+  searchPosts = async (req, res) => {
+    try {
+      const { q } = req.query;
+      
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: '검색어를 입력해주세요.'
+        });
+      }
+
+      const result = await this.postService.searchPosts(q);
+
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      res.status(500).json({
         success: false,
         error: error.message
       });

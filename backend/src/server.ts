@@ -23,6 +23,36 @@ app.use((req, res, next) => {
 const userRepository = new UserRepositoryImpl();
 const userService = new UserService(userRepository);
 
+// 사용자 검색 API 추가
+app.get('/api/users/search', async (req, res) => {
+  try {
+    const { q } = req.query; // 검색어
+    
+    if (!q || typeof q !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: '검색어를 입력해주세요.'
+      });
+    }
+
+    // UserService의 searchUsers 메서드 호출
+    const users = await userService.searchUsers(q);
+
+    res.json({
+      success: true,
+      data: {
+        users
+      }
+    });
+  } catch (error: any) {
+    console.error('User search error:', error);
+    res.status(500).json({
+      success: false,
+      error: '사용자 검색 중 오류가 발생했습니다.'
+    });
+  }
+});
+
 // 데이터베이스 초기화
 const initializeDatabase = async () => {
   try {
@@ -172,6 +202,7 @@ const startServer = async () => {
       console.log(`   POST /auth/register - 회원가입`);
       console.log(`   POST /auth/login - 로그인`);
       console.log(`   GET /auth/check-nickname?nickname=... - 닉네임 중복 확인`);
+      console.log(`   GET /api/users/search?q=... - 사용자 검색`);
     });
   } catch (error) {
     console.error('❌ Server startup failed:', error);
