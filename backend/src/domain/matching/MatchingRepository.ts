@@ -21,4 +21,10 @@ export interface MatchingRepository {
   
   // 만료된 매칭 정리
   cleanupExpiredMatchings(): Promise<void>;
+  
+  // 매칭 대기열 관련
+  addToQueue(userId: string, preference: MatchingPreference): Promise<void>;
+  removeFromQueue(userId: string): Promise<void>;
+  findWaitingPartner(userId: string, preference: MatchingPreference): Promise<MatchingCandidate | null>;
+  cleanupExpiredQueueItems(): Promise<void>;
 }

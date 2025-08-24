@@ -51,7 +51,7 @@ export interface MatchingCandidate {
 }
 
 export interface MatchingResult {
-  matching: Matching;
+  matching: Matching | null;
   partnerProfile: {
     height: number;
     age: number;
@@ -59,9 +59,11 @@ export interface MatchingResult {
     major: string;
     mbti: string;
     hobbies: string;
-  };
+  } | null;
   partnerUser: {
     nickname: string;
     temperature: number;
-  };
+  } | null;
+  message?: string;
+  status?: 'matched' | 'waiting';
 }

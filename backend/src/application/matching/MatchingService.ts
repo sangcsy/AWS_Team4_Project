@@ -64,31 +64,40 @@ export class MatchingService {
         throw new Error('매칭 선호도가 설정되지 않았거나 비활성화되어 있습니다.');
       }
 
-      // 매칭 후보자 조회
-      const candidates = await this.findMatchingCandidates(userId, 'random');
-      if (candidates.length === 0) {
-        return null; // 매칭 가능한 후보자가 없음
+      // 1. 먼저 현재 대기열에서 조건에 맞는 상대방 찾기
+      const waitingPartner = await this.matchingRepository.findWaitingPartner(userId, preference);
+      
+      if (waitingPartner) {
+        // 즉시 매칭 성공!
+        const matching = await this.matchingRepository.createMatching(userId, waitingPartner.userId);
+        
+        // 대기열에서 상대방 제거
+        await this.matchingRepository.removeFromQueue(waitingPartner.userId);
+        
+        // 3일 후 만료 설정
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 3);
+        await this.matchingRepository.updateMatchingStatus(matching.id, 'active');
+
+        return {
+          matching: {
+            ...matching,
+            expiresAt
+          },
+          partnerProfile: waitingPartner.profile,
+          partnerUser: waitingPartner.user
+        };
       }
 
-      // 랜덤하게 후보자 선택
-      const randomIndex = Math.floor(Math.random() * candidates.length);
-      const selectedCandidate = candidates[randomIndex];
-
-      // 매칭 생성
-      const matching = await this.matchingRepository.createMatching(userId, selectedCandidate.userId);
-
-      // 3일 후 만료 설정
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 3);
-      await this.matchingRepository.updateMatchingStatus(matching.id, 'active');
-
+      // 2. 즉시 매칭이 안 되면 대기열에 등록
+      await this.matchingRepository.addToQueue(userId, preference);
+      
       return {
-        matching: {
-          ...matching,
-          expiresAt
-        },
-        partnerProfile: selectedCandidate.profile,
-        partnerUser: selectedCandidate.user
+        matching: null,
+        partnerProfile: null,
+        partnerUser: null,
+        message: '매칭 대기열에 등록되었습니다. 조건에 맞는 상대방이 나타나면 자동으로 매칭됩니다.',
+        status: 'waiting'
       };
     } catch (error) {
       throw error;

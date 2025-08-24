@@ -5,49 +5,52 @@ import { CreateProfileRequest, UpdateProfileRequest } from '../../../domain/prof
 export class ProfileController {
   constructor(private profileService: ProfileService) {}
 
-  async createProfile(req: Request, res: Response) {
-    try {
+  async createProfile(req: Request, res: Response): Promise<void> {
+      try {
         console.log('ProfileController - createProfile called');
         console.log('ProfileController - req.user:', req.user);
         console.log('ProfileController - req.user.userId:', req.user?.userId);
         
-        if (!req.user || !req.user.userId) {
-            console.log('ProfileController - No user found in request');
-            return res.status(401).json({ success: false, error: '인증이 필요합니다.' });
+        if (!req.user?.userId) {
+          console.log('ProfileController - No user found in request');
+          return res.status(401).json({ 
+            success: false, 
+            error: "인증이 필요합니다." 
+          });
         }
 
-        const userId = req.user.userId; // 이 줄이 제대로 있는지 확인
-        console.log('ProfileController - userId extracted:', userId); // 추가 로그
-        
-        const profileData: CreateProfileRequest = req.body;
-        
-        if (!profileData.height || !profileData.age || !profileData.gender || 
-            !profileData.major || !profileData.mbti || !profileData.hobbies) {
-            return res.status(400).json({
-                success: false,
-                error: '필수 정보를 모두 입력해주세요.'
-            });
-        }
+          const userId = req.user.userId;
+          console.log('ProfileController - userId extracted:', userId);
+          
+          const profileData: CreateProfileRequest = req.body;
+          
+          if (!profileData.height || !profileData.age || !profileData.gender || 
+              !profileData.major || !profileData.mbti || !profileData.hobbies) {
+              return res.status(400).json({
+                  success: false,
+                  error: '필수 정보를 모두 입력해주세요.'
+              });
+          }
 
-        const profile = await this.profileService.createProfile(profileData, userId);
-        
-        res.status(201).json({
-            success: true,
-            message: '프로필이 생성되었습니다.',
-            data: profile
-        });
-    } catch (error) {
-        console.error('ProfileController - createProfile error:', error);
-        res.status(500).json({
-            success: false,
-            error: '프로필 생성 중 오류가 발생했습니다.'
-        });
-    }
-}
+          const profile = await this.profileService.createProfile(profileData, userId);
+          
+          res.status(201).json({
+              success: true,
+              message: '프로필이 생성되었습니다.',
+              data: profile
+          });
+      } catch (error) {
+          console.error('ProfileController - createProfile error:', error);
+          res.status(500).json({
+              success: false,
+              error: '프로필 생성 중 오류가 발생했습니다.'
+          });
+      }
+  }
 
   async getProfile(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.userId;
       if (!userId) {
         res.status(401).json({ success: false, error: '인증이 필요합니다.' });
         return;

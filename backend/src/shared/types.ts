@@ -38,3 +38,14 @@ export interface DatabaseConfig {
   database: string;
   port: number;
 }
+
+// Express Request 타입 확장
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        userId: string;
+      };
+    }
+  }
+}

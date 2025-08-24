@@ -242,6 +242,24 @@ export class DatabaseConnection {
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
       `);
+
+      // matching_queue 테이블 (매칭 대기열)
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS matching_queue (
+          id VARCHAR(36) PRIMARY KEY,
+          user_id VARCHAR(36) NOT NULL,
+          preferred_gender ENUM('male', 'female', 'all') NOT NULL,
+          matching_algorithm ENUM('random', 'tempus') NOT NULL,
+          tempus_range_min DECIMAL(3,1),
+          tempus_range_max DECIMAL(3,1),
+          status ENUM('waiting', 'matched', 'expired') DEFAULT 'waiting',
+          expires_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL 24 HOUR),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          INDEX idx_status (status),
+          INDEX idx_expires (expires_at)
+        )
+      `);
       
       console.log('✅ Database tables created successfully');
     } catch (error) {

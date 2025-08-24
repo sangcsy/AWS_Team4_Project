@@ -8,7 +8,7 @@ export class MatchingController {
   // 매칭 선호도 생성
   async createMatchingPreference(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.userId;
       if (!userId) {
         res.status(401).json({ success: false, error: '인증이 필요합니다.' });
         return;
@@ -40,7 +40,7 @@ export class MatchingController {
   // 매칭 선호도 조회
   async getMatchingPreference(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.userId;
       if (!userId) {
         res.status(401).json({ success: false, error: '인증이 필요합니다.' });
         return;
@@ -68,7 +68,7 @@ export class MatchingController {
   // 매칭 선호도 수정
   async updateMatchingPreference(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.userId;
       if (!userId) {
         res.status(401).json({ success: false, error: '인증이 필요합니다.' });
         return;
@@ -99,7 +99,7 @@ export class MatchingController {
   // 매칭 선호도 삭제
   async deleteMatchingPreference(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.userId;
       if (!userId) {
         res.status(401).json({ success: false, error: '인증이 필요합니다.' });
         return;
@@ -122,7 +122,7 @@ export class MatchingController {
   // 매칭 활성화
   async activateMatching(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.userId;
       if (!userId) {
         res.status(401).json({ success: false, error: '인증이 필요합니다.' });
         return;
@@ -168,7 +168,7 @@ export class MatchingController {
   // 랜덤 매칭 실행
   async executeRandomMatching(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.userId;
       if (!userId) {
         res.status(401).json({ success: false, error: '인증이 필요합니다.' });
         return;

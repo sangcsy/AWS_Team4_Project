@@ -306,4 +306,156 @@ export class MatchingRepositoryImpl implements MatchingRepository {
   private camelToSnake(str: string): string {
     return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
   }
+
+  // 매칭 대기열에 추가
+  async addToQueue(userId: string, preference: MatchingPreference): Promise<void> {
+    const pool = await this.dbConnection.getPool();
+    const id = uuidv4();
+    
+    // 기존 대기열 항목이 있으면 제거
+    await this.removeFromQueue(userId);
+    
+    // 온도 범위 계산 (온도 기반 매칭인 경우)
+    let tempusRangeMin = null;
+    let tempusRangeMax = null;
+    
+    if (preference.matchingAlgorithm === 'tempus_based') {
+      // 사용자의 현재 온도 조회
+      const [userRows] = await pool.execute(
+        'SELECT temperature FROM users WHERE id = ?',
+        [userId]
+      );
+      const userTemp = (userRows as any[])[0]?.temperature || 36.5;
+      
+      tempusRangeMin = userTemp - 10;
+      tempusRangeMax = userTemp + 10;
+    }
+    
+    await pool.execute(
+      `INSERT INTO matching_queue (id, user_id, preferred_gender, matching_algorithm, tempus_range_min, tempus_range_max) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [id, userId, preference.preferredGender, preference.matchingAlgorithm, tempusRangeMin, tempusRangeMax]
+    );
+  }
+
+  // 매칭 대기열에서 제거
+  async removeFromQueue(userId: string): Promise<void> {
+    const pool = await this.dbConnection.getPool();
+    await pool.execute('DELETE FROM matching_queue WHERE user_id = ?', [userId]);
+  }
+
+  // 대기열에서 조건에 맞는 상대방 찾기
+  async findWaitingPartner(userId: string, preference: MatchingPreference): Promise<MatchingCandidate | null> {
+    const pool = await this.dbConnection.getPool();
+    
+    // 사용자의 프로필과 온도 조회
+    const [userRows] = await pool.execute(
+      'SELECT p.*, u.temperature FROM user_profiles p JOIN users u ON p.user_id = u.id WHERE p.user_id = ?',
+      [userId]
+    );
+    
+    if ((userRows as any[]).length === 0) return null;
+    
+    const userProfile = (userRows as any[])[0];
+    const userTemp = userProfile.temperature;
+    
+    // 조건에 맞는 대기열 상대방 찾기
+    let query = `
+      SELECT q.*, p.height, p.age, p.gender, p.major, p.mbti, p.hobbies, u.nickname, u.temperature
+      FROM matching_queue q
+      JOIN user_profiles p ON q.user_id = p.user_id
+      JOIN users u ON q.user_id = u.id
+      WHERE q.user_id != ? 
+      AND q.status = 'waiting'
+      AND q.expires_at > NOW()
+    `;
+    
+    const params: any[] = [userId];
+    
+    // 성별 조건
+    if (preference.preferredGender !== 'all') {
+      query += ` AND p.gender = ?`;
+      params.push(preference.preferredGender);
+    }
+    
+    // 상대방의 성별 선호도 확인
+    if (userProfile.gender !== 'other') {
+      query += ` AND (q.preferred_gender = 'all' OR q.preferred_gender = ?)`;
+      params.push(userProfile.gender);
+    }
+    
+    // 온도 기반 매칭인 경우 온도 범위 확인
+    if (preference.matchingAlgorithm === 'tempus_based') {
+      query += ` AND q.matching_algorithm = 'tempus_based'`;
+      query += ` AND u.temperature BETWEEN q.tempus_range_min AND q.tempus_range_max`;
+      query += ` AND ? BETWEEN q.tempus_range_min AND q.tempus_range_max`;
+      params.push(userTemp);
+    }
+    
+    // 랜덤 매칭인 경우
+    if (preference.matchingAlgorithm === 'random') {
+      query += ` AND q.matching_algorithm = 'random'`;
+    }
+    
+    // 이미 매칭된 사용자 제외
+    query += ` AND q.user_id NOT IN (
+      SELECT DISTINCT 
+        CASE 
+          WHEN user1_id = ? THEN user2_id 
+          WHEN user2_id = ? THEN user1_id 
+        END
+      FROM matchings 
+      WHERE (user1_id = ? OR user2_id = ?) 
+      AND status = 'active'
+    )`;
+    params.push(userId, userId, userId, userId);
+    
+    // 온도 차이가 적은 순서로 정렬 (온도 기반 매칭인 경우)
+    if (preference.matchingAlgorithm === 'tempus_based') {
+      query += ` ORDER BY ABS(u.temperature - ?) ASC`;
+      params.push(userTemp);
+    } else {
+      query += ` ORDER BY RAND()`;
+    }
+    
+    query += ` LIMIT 1`;
+    
+    const [rows] = await pool.execute(query, params);
+    const candidates = rows as any[];
+    
+    if (candidates.length === 0) return null;
+    
+    const candidate = candidates[0];
+    return {
+      userId: candidate.user_id,
+      profile: {
+        height: candidate.height,
+        age: candidate.age,
+        gender: candidate.gender,
+        major: candidate.major,
+        mbti: candidate.mbti,
+        hobbies: candidate.hobbies
+      },
+      user: {
+        nickname: candidate.nickname,
+        temperature: candidate.temperature
+      },
+      tempusDifference: preference.matchingAlgorithm === 'tempus_based' 
+        ? Math.abs(candidate.temperature - userTemp) 
+        : 0
+    };
+  }
+
+  // 만료된 대기열 항목 정리
+  async cleanupExpiredQueueItems(): Promise<void> {
+    const pool = await this.dbConnection.getPool();
+    
+    // 만료된 대기열 항목을 expired 상태로 변경
+    await pool.execute(
+      `UPDATE matching_queue 
+       SET status = 'expired' 
+       WHERE expires_at <= NOW() 
+       AND status = 'waiting'`
+    );
+  }
 }
