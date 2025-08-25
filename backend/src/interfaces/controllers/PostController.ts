@@ -1,7 +1,9 @@
-const { PostService } = require('../../application/post/PostService');
-const { PostRepositoryImpl } = require('../../infrastructure/post/PostRepositoryImpl');
+import { PostService } from '../../application/post/PostService';
+import { PostRepositoryImpl } from '../../infrastructure/post/PostRepositoryImpl';
 
-class PostController {
+export class PostController {
+  private postService: PostService;
+
   constructor() {
     const postRepository = new PostRepositoryImpl();
     this.postService = new PostService(postRepository);
@@ -9,8 +11,10 @@ class PostController {
 
   createPost = async (req, res) => {
     try {
-      const { title, content, temperature_change } = req.body;
+      const { title, content, category, temperature_change } = req.body;
       const userId = req.user?.userId;
+
+      console.log('📝 PostController.createPost - 요청 데이터:', { title, content, category, temperature_change, userId });
 
       if (!userId) {
         return res.status(401).json({
@@ -19,7 +23,7 @@ class PostController {
         });
       }
 
-      const post = await this.postService.createPost({ title, content, temperature_change }, userId);
+      const post = await this.postService.createPost({ title, content, category, temperature_change }, userId);
 
       res.status(201).json({
         success: true,
@@ -186,15 +190,22 @@ class PostController {
   toggleLike = async (req, res) => {
     try {
       const { id } = req.params;
+      console.log('🔍 PostController.toggleLike - postId:', id);
+      console.log('🔍 PostController.toggleLike - req.user:', req.user);
+      console.log('🔍 PostController.toggleLike - req.user?.userId:', req.user?.userId);
+      
       const userId = req.user?.userId;
 
       if (!userId) {
+        console.error('❌ PostController.toggleLike - userId가 없음');
+        console.error('❌ PostController.toggleLike - req.user:', req.user);
         return res.status(401).json({
           success: false,
           error: '인증이 필요합니다.'
         });
       }
 
+      console.log('✅ PostController.toggleLike - userId 확인됨:', userId);
       const result = await this.postService.toggleLike(id, userId);
 
       res.json({
@@ -203,6 +214,7 @@ class PostController {
         data: result
       });
     } catch (error) {
+      console.error('💥 PostController.toggleLike - Error:', error);
       res.status(400).json({
         success: false,
         error: error.message
@@ -236,5 +248,3 @@ class PostController {
     }
   };
 }
-
-module.exports = { PostController };

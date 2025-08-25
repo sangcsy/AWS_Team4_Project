@@ -20,4 +20,7 @@ router.get('/search', authMiddleware, userController.searchUsers);
 // 사용자 프로필 조회 (인증 필요)
 router.get('/profile/:userId', authMiddleware, userController.getUserProfile);
 
+// 사용자 기본 정보 조회 (인증 필요)
+router.get('/:userId', authMiddleware, userController.getUserById);
+
 export default router;

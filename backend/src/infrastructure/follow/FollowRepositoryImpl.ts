@@ -1,7 +1,7 @@
-const { v4: uuidv4 } = require('uuid');
-const { databaseConnection } = require('../../shared/database');
+import { v4 as uuidv4 } from 'uuid';
+import { databaseConnection } from '../../shared/database';
 
-class FollowRepositoryImpl {
+export class FollowRepositoryImpl {
   async create(followerId, data) {
     const pool = await databaseConnection.getPool();
     const id = uuidv4();
@@ -163,5 +163,3 @@ class FollowRepositoryImpl {
     return { follows, total, page: pageNum, limit: limitNum };
   }
 }
-
-module.exports = { FollowRepositoryImpl };

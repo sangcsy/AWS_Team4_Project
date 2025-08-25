@@ -17,6 +17,9 @@ router.post('/', authMiddleware, (req, res) => profileController.createProfile(r
 // 내 프로필 조회 (GET /api/profile)
 router.get('/', authMiddleware, (req, res) => profileController.getProfile(req, res));
 
+// 특정 사용자 프로필 조회 (GET /api/profile/:userId)
+router.get('/:userId', authMiddleware, (req, res) => profileController.getProfile(req, res));
+
 // 프로필 수정 (PUT /api/profile)
 router.put('/', authMiddleware, (req, res) => profileController.updateProfile(req, res));
 

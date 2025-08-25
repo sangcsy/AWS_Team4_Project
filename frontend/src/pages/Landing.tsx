@@ -28,7 +28,7 @@ export default function Landing() {
     try {
       if (isLoginMode) {
         // 로그인
-        const response = await fetch('http://localhost:3000/api/auth/login', {
+        const response = await fetch('http://localhost:3000/api/users/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -56,7 +56,7 @@ export default function Landing() {
         }
       } else {
         // 회원가입
-        const response = await fetch('http://localhost:3000/api/auth/register', {
+        const response = await fetch('http://localhost:3000/api/users/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, nickname })

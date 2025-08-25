@@ -13,6 +13,8 @@ export class PostService {
   }
 
   async createPost(postData: CreatePostRequest, userId: string): Promise<PostResponse> {
+    console.log('📝 PostService.createPost - 입력 데이터:', postData);
+    
     // 제목과 내용 검증
     if (!postData.title || postData.title.trim().length === 0) {
       throw new Error('제목을 입력해주세요.');
@@ -25,7 +27,17 @@ export class PostService {
     // 온도 변화 기본값 설정
     const temperatureChange = postData.temperature_change || 0.0;
 
+    console.log('📝 PostService.createPost - 검증된 데이터:', { 
+      title: postData.title, 
+      content: postData.content, 
+      category: postData.category, 
+      temperature_change: temperatureChange,
+      userId 
+    });
+
     const post = await this.postRepository.create(postData, userId);
+    console.log('📝 PostService.createPost - 생성된 게시글:', post);
+    
     return this.toPostResponse(post);
   }
 

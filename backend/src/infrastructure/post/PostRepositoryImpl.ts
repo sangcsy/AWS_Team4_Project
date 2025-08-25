@@ -12,7 +12,7 @@ export class PostRepositoryImpl implements PostRepository {
       const pool = await databaseConnection.getPool();
       
       // posts 테이블에 likes 컬럼이 있는지 확인
-      const [columns] = await pool.execute(`
+      const [likesColumns] = await pool.execute(`
         SELECT COLUMN_NAME 
         FROM INFORMATION_SCHEMA.COLUMNS 
         WHERE TABLE_SCHEMA = 'tempus_db' 
@@ -21,7 +21,7 @@ export class PostRepositoryImpl implements PostRepository {
       `);
       
       // likes 컬럼이 없다면 추가
-      if (columns.length === 0) {
+      if (likesColumns.length === 0) {
         await pool.execute(`
           ALTER TABLE posts 
           ADD COLUMN likes INT DEFAULT 0
@@ -29,6 +29,26 @@ export class PostRepositoryImpl implements PostRepository {
         console.log('✅ likes 컬럼 추가 완료');
       } else {
         console.log('✅ likes 컬럼이 이미 존재합니다');
+      }
+
+      // posts 테이블에 category 컬럼이 있는지 확인
+      const [categoryColumns] = await pool.execute(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = 'tempus_db' 
+        AND TABLE_NAME = 'posts' 
+        AND COLUMN_NAME = 'category'
+      `);
+      
+      // category 컬럼이 없다면 추가
+      if (categoryColumns.length === 0) {
+        await pool.execute(`
+          ALTER TABLE posts 
+          ADD COLUMN category VARCHAR(50) DEFAULT '자유'
+        `);
+        console.log('✅ category 컬럼 추가 완료');
+      } else {
+        console.log('✅ category 컬럼이 이미 존재합니다');
       }
       
       console.log('✅ Posts 테이블 초기화 완료');
@@ -43,8 +63,8 @@ export class PostRepositoryImpl implements PostRepository {
     const now = new Date();
     
     const [result] = await pool.execute(
-      'INSERT INTO posts (id, user_id, title, content, temperature_change, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [id, userId, postData.title, postData.content, postData.temperature_change || 0.0, now, now]
+      'INSERT INTO posts (id, user_id, title, content, category, temperature_change, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, userId, postData.title, postData.content, postData.category || '자유', postData.temperature_change || 0.0, now, now]
     );
 
     return {
@@ -52,6 +72,7 @@ export class PostRepositoryImpl implements PostRepository {
       user_id: userId,
       title: postData.title,
       content: postData.content,
+      category: postData.category || '자유',
       temperature_change: postData.temperature_change || 0.0,
       created_at: now,
       updated_at: now
@@ -75,6 +96,7 @@ export class PostRepositoryImpl implements PostRepository {
       user_id: row.user_id,
       title: row.title,
       content: row.content,
+      category: row.category || '자유',
       temperature_change: parseFloat(row.temperature_change),
       created_at: new Date(row.created_at),
       updated_at: new Date(row.updated_at)
@@ -103,6 +125,7 @@ export class PostRepositoryImpl implements PostRepository {
       user_id: row.user_id,
       title: row.title,
       content: row.content,
+      category: row.category || '자유',
       temperature_change: parseFloat(row.temperature_change),
       created_at: new Date(row.created_at),
       updated_at: new Date(row.updated_at)
@@ -175,6 +198,7 @@ export class PostRepositoryImpl implements PostRepository {
         user_id: row.user_id,
         title: row.title,
         content: row.content,
+        category: row.category || '자유', // 카테고리 필드 추가
         temperature_change: parseFloat(row.temperature_change),
         created_at: new Date(row.created_at),
         updated_at: new Date(row.updated_at),
@@ -244,9 +268,10 @@ export class PostRepositoryImpl implements PostRepository {
     return updatedPost;
   }
 
-  async delete(id: string, userId: string): Promise<void> {
+  async delete(id: string, userId: string): Promise<boolean> {
     const pool = await databaseConnection.getPool();
     await pool.execute('DELETE FROM posts WHERE id = ? AND user_id = ?', [id, userId]);
+    return true;
   }
 
   async updateTemperature(id: string, temperatureChange: number): Promise<Post> {
@@ -390,32 +415,33 @@ export class PostRepositoryImpl implements PostRepository {
         [row.id]
       );
 
-      return {
-        id: row.id,
-        user_id: row.user_id,
-        title: row.title,
-        content: row.content,
-        temperature_change: parseFloat(row.temperature_change),
-        created_at: new Date(row.created_at),
-        updated_at: new Date(row.updated_at),
-        user: {
-          nickname: row.nickname || '알 수 없음',
-          temperature: row.temperature || 36.5,
-          email: row.email || ''
-        },
-        likes: likesResult[0]?.likes || 0,
-        isLiked: false,
-        comments: commentRows.map((comment: any) => ({
-          id: comment.id,
-          post_id: comment.post_id,
-          user_id: comment.user_id,
-          content: comment.content,
-          created_at: comment.created_at,
-          user: {
-            nickname: comment.nickname || '알 수 없음'
-          }
-        }))
-      };
+             return {
+         id: row.id,
+         user_id: row.user_id,
+         title: row.title,
+         content: row.content,
+         category: row.category || '자유',
+         temperature_change: parseFloat(row.temperature_change),
+         created_at: new Date(row.created_at),
+         updated_at: new Date(row.updated_at),
+         user: {
+           nickname: row.nickname || '알 수 없음',
+           temperature: row.temperature || 36.5,
+           email: row.email || ''
+         },
+         likes: likesResult[0]?.likes || 0,
+         isLiked: false,
+         comments: commentRows.map((comment: any) => ({
+           id: comment.id,
+           post_id: comment.post_id,
+           user_id: comment.user_id,
+           content: comment.content,
+           created_at: comment.created_at,
+           user: {
+             nickname: comment.nickname || '알 수 없음'
+           }
+         }))
+       };
     }));
 
     return { posts, total: posts.length };

@@ -1,3 +1,4 @@
+import { Request, Response } from 'express';
 import { UserService } from '../../functions/auth/UserService';
 import { UserRepositoryImpl } from '../../functions/auth/UserRepositoryImpl';
 import jwt from 'jsonwebtoken';
@@ -10,11 +11,10 @@ class UserController {
     this.userService = new UserService(userRepository);
   }
 
-  register = async (req: any, res: any) => {
+  register = async (req: Request, res: Response) => {
     try {
       const { email, password, nickname } = req.body;
 
-      // 입력 검증
       if (!email || !password || !nickname) {
         return res.status(400).json({
           success: false,
@@ -22,36 +22,26 @@ class UserController {
         });
       }
 
-      const authResponse = await this.userService.register(email, password, nickname);
-      
-      // JWT 토큰 생성
-      const token = jwt.sign(
-        { userId: authResponse.user.id, email: authResponse.user.email },
-        process.env['JWT_SECRET'] || 'your_jwt_secret',
-        { expiresIn: '24h' }
-      );
+      const result = await this.userService.register(email, password, nickname);
 
       res.status(201).json({
         success: true,
         message: '회원가입이 완료되었습니다.',
-        data: {
-          user: authResponse.user,
-          token
-        }
+        data: result
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
       res.status(400).json({
         success: false,
-        error: error.message
+        error: errorMessage
       });
     }
   };
 
-  login = async (req: any, res: any) => {
+  login = async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
 
-      // 입력 검증
       if (!email || !password) {
         return res.status(400).json({
           success: false,
@@ -59,36 +49,27 @@ class UserController {
         });
       }
 
-      const authResponse = await this.userService.login(email, password);
-      
-      // JWT 토큰 생성
-      const token = jwt.sign(
-        { userId: authResponse.user.id, email: authResponse.user.email },
-        process.env['JWT_SECRET'] || 'your_jwt_secret',
-        { expiresIn: '24h' }
-      );
+      const result = await this.userService.login(email, password);
 
       res.json({
         success: true,
         message: '로그인이 완료되었습니다.',
-        data: {
-          user: authResponse.user,
-          token
-        }
+        data: result
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '로그인에 실패했습니다.';
       res.status(401).json({
         success: false,
-        error: error.message
+        error: errorMessage
       });
     }
   };
 
-  checkNickname = async (req: any, res: any) => {
+  checkNickname = async (req: Request, res: Response) => {
     try {
-      const { nickname } = req.query;
+      const { nickname } = req.params;
 
-      if (!nickname || typeof nickname !== 'string') {
+      if (!nickname) {
         return res.status(400).json({
           success: false,
           error: '닉네임을 입력해주세요.'
@@ -100,22 +81,23 @@ class UserController {
       res.json({
         success: true,
         data: {
+          nickname,
           isAvailable
         }
       });
-    } catch (error: any) {
-      res.status(400).json({
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '닉네임 확인에 실패했습니다.';
+      res.status(500).json({
         success: false,
-        error: error.message
+        error: errorMessage
       });
     }
   };
 
-  // 사용자 검색 메서드 추가
-  searchUsers = async (req: any, res: any) => {
+  searchUsers = async (req: Request, res: Response) => {
     try {
       const { q } = req.query;
-
+      
       if (!q || typeof q !== 'string') {
         return res.status(400).json({
           success: false,
@@ -131,19 +113,19 @@ class UserController {
           users
         }
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '사용자 검색에 실패했습니다.';
       res.status(500).json({
         success: false,
-        error: error.message
+        error: errorMessage
       });
     }
   };
 
-  // 사용자 프로필 조회 메서드 추가
-  getUserProfile = async (req: any, res: any) => {
+  getUserProfile = async (req: Request, res: Response) => {
     try {
       const { userId } = req.params;
-      
+
       if (!userId) {
         return res.status(400).json({
           success: false,
@@ -151,9 +133,9 @@ class UserController {
         });
       }
 
-      const profile = await this.userService.getUserProfile(userId);
+      const user = await this.userService.getUserProfile(userId);
 
-      if (!profile) {
+      if (!user) {
         return res.status(404).json({
           success: false,
           error: '사용자를 찾을 수 없습니다.'
@@ -162,12 +144,54 @@ class UserController {
 
       res.json({
         success: true,
-        data: profile
+        data: {
+          user
+        }
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '사용자 프로필 조회에 실패했습니다.';
       res.status(500).json({
         success: false,
-        error: error.message
+        error: errorMessage
+      });
+    }
+  };
+
+  getUserById = async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          error: '사용자 ID가 필요합니다.'
+        });
+      }
+
+      const user = await this.userService.getUserById(userId);
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: '사용자를 찾을 수 없습니다.'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          id: user.id,
+          nickname: user.nickname,
+          email: user.email,
+          temperature: user.temperature,
+          created_at: user.created_at
+        }
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '사용자 정보 조회에 실패했습니다.';
+      res.status(500).json({
+        success: false,
+        error: errorMessage
       });
     }
   };

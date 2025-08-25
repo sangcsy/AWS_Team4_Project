@@ -160,4 +160,59 @@ export class ProfileRepositoryImpl implements ProfileRepository {
   private camelToSnake(str: string): string {
     return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
   }
+
+  async findUserById(userId: string): Promise<any> {
+    const pool = await this.dbConnection.getPool();
+    const [rows] = await pool.execute(
+      'SELECT id, nickname, email, temperature, created_at FROM users WHERE id = ?',
+      [userId]
+    );
+
+    const users = rows as any[];
+    if (users.length === 0) return null;
+
+    return users[0];
+  }
+
+  async getFollowStats(userId: string): Promise<any> {
+    const pool = await this.dbConnection.getPool();
+    
+    // 팔로워 수 조회
+    const [followerRows] = await pool.execute(
+      'SELECT COUNT(*) as count FROM follows WHERE following_id = ?',
+      [userId]
+    );
+    
+    // 팔로잉 수 조회
+    const [followingRows] = await pool.execute(
+      'SELECT COUNT(*) as count FROM follows WHERE follower_id = ?',
+      [userId]
+    );
+    
+    return {
+      followerCount: followerRows[0].count,
+      followingCount: followingRows[0].count
+    };
+  }
+
+  async getPostStats(userId: string): Promise<any> {
+    const pool = await this.dbConnection.getPool();
+    
+    // 게시글 수 조회
+    const [rows] = await pool.execute(
+      'SELECT COUNT(*) as count FROM posts WHERE user_id = ?',
+      [userId]
+    );
+    
+    // 받은 좋아요 수 조회
+    const [likeRows] = await pool.execute(
+      'SELECT COALESCE(SUM(likes), 0) as total_likes FROM posts WHERE user_id = ?',
+      [userId]
+    );
+    
+    return {
+      totalPosts: rows[0].count,
+      totalLikes: likeRows[0].total_likes || 0
+    };
+  }
 }

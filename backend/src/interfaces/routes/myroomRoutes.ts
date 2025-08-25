@@ -1,6 +1,6 @@
-const express = require('express');
-const { MyRoomController } = require('../controllers/MyRoomController');
-const { authMiddleware } = require('../middlewares/authMiddleware');
+import express from 'express';
+import { MyRoomController } from '../controllers/MyRoomController';
+import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = express.Router();
 const myRoomController = new MyRoomController();
@@ -19,4 +19,4 @@ router.post('/items', authMiddleware, myRoomController.addItem);
 router.get('/items', authMiddleware, myRoomController.getItems);
 router.delete('/items/:itemId', authMiddleware, myRoomController.removeItem);
 
-module.exports = router;
+export default router;

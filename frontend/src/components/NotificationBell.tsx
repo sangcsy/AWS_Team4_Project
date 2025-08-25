@@ -39,9 +39,17 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) => {
         const data = await response.json();
         setNotifications(data.data.notifications);
         setUnreadCount(data.data.notifications.filter((n: Notification) => !n.is_read).length);
+      } else if (response.status === 500) {
+        // 서버 에러 시 빈 배열로 설정 (알림 기능 일시 비활성화)
+        console.log('⚠️ 알림 서버 에러, 알림 기능을 일시적으로 비활성화합니다.');
+        setNotifications([]);
+        setUnreadCount(0);
       }
     } catch (error) {
       console.error('알림 로드 실패:', error);
+      // 에러 시에도 빈 배열로 설정
+      setNotifications([]);
+      setUnreadCount(0);
     } finally {
       setLoading(false);
     }
@@ -62,9 +70,14 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) => {
       if (response.ok) {
         const data = await response.json();
         setUnreadCount(data.data.unreadCount);
+      } else if (response.status === 500) {
+        // 서버 에러 시 0으로 설정
+        console.log('⚠️ 알림 개수 서버 에러, 0으로 설정합니다.');
+        setUnreadCount(0);
       }
     } catch (error) {
       console.error('읽지 않은 알림 개수 로드 실패:', error);
+      setUnreadCount(0);
     }
   };
 
@@ -141,7 +154,9 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) => {
   };
 
   useEffect(() => {
-    if (userId) {
+    // 토큰이 있을 때만 알림 로드
+    const token = localStorage.getItem('token');
+    if (userId && token) {
       loadNotifications();
       loadUnreadCount();
       

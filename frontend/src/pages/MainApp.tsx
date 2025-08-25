@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, Routes, Route, useParams } from 'react-router-dom';
 import UserProfile from './UserProfile';
 import NotificationBell from '../components/NotificationBell';
+import RandomChat from '../components/RandomChat';
 import './MainApp.css';
 
 type Post = {
@@ -72,6 +73,24 @@ export default function MainApp() {
   const [selectedCategory, setSelectedCategory] = useState<string>('전체')
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([])
   
+  // 초기 상태 설정 - 게시글 개수 안정화
+  useEffect(() => {
+    if (posts.length > 0) {
+      console.log('🔄 posts 상태 변경됨, filteredPosts 업데이트:', posts.length)
+      setFilteredPosts(posts)
+      
+      // 현재 선택된 카테고리에 따라 필터링 재적용
+      if (selectedCategory !== '전체') {
+        const filtered = posts.filter((post: Post) => {
+          const postCategory = post.category || '자유'
+          return postCategory === selectedCategory
+        })
+        console.log(`🔄 선택된 카테고리(${selectedCategory})에 맞게 재필터링:`, filtered.length)
+        setFilteredPosts(filtered)
+      }
+    }
+  }, [posts, selectedCategory])
+  
   // 정렬 상태
   const [sortBy, setSortBy] = useState<'latest' | 'popular' | 'temperature'>('latest')
   
@@ -82,17 +101,49 @@ export default function MainApp() {
   // 팔로잉 관련 상태
   const [followingList, setFollowingList] = useState<string[]>([]) // 내가 팔로우하는 사용자 ID 목록
   const [followersList, setFollowersList] = useState<string[]>([]) // 나를 팔로우하는 사용자 ID 목록
+  const [followingUsers, setFollowingUsers] = useState<any[]>([]) // 팔로잉 사용자 상세 정보
+  const [followersUsers, setFollowersUsers] = useState<any[]>([]) // 팔로워 사용자 상세 정보
   const [isFollowingLoading, setIsFollowingLoading] = useState(false)
   
   // 사용자 검색 관련 상태
   const [userSearchQuery, setUserSearchQuery] = useState('')
   const [userSearchResults, setUserSearchResults] = useState<any[]>([])
   const [isUserSearching, setIsUserSearching] = useState(false)
+  
+  // 좋아요 상태 관리
+  const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set())
   const [showUserSearch, setShowUserSearch] = useState(false)
   
+  // 로컬 스토리지에서 좋아요 상태 복원
+  useEffect(() => {
+    const currentUserId = localStorage.getItem('userId')
+    if (currentUserId) {
+      const savedLikedIds = localStorage.getItem(`likedPosts_${currentUserId}`)
+      if (savedLikedIds) {
+        try {
+          const parsedIds = JSON.parse(savedLikedIds)
+          setLikedPostIds(new Set(parsedIds))
+        } catch (error) {
+          console.error('좋아요 ID 파싱 실패:', error)
+        }
+      }
+    }
+  }, [])
+  
+  // 좋아요 상태를 로컬 스토리지에 저장
+  const saveLikedPostIds = (postIds: string[]) => {
+    const currentUserId = localStorage.getItem('userId')
+    if (currentUserId) {
+      localStorage.setItem(`likedPosts_${currentUserId}`, JSON.stringify(postIds))
+    }
+  }
+  
+
+  
   // 메뉴 상태 관리
-  const [activeMenu, setActiveMenu] = useState<'home' | 'following' | 'community' | 'myposts'>('home')
+  const [activeMenu, setActiveMenu] = useState<'home' | 'following' | 'community' | 'myposts' | 'randomchat' | 'myroom'>('home')
   const [selectedCommunityCategory, setSelectedCommunityCategory] = useState<string>('전체')
+  const [activeFollowTab, setActiveFollowTab] = useState<'following' | 'followers'>('following')
 
   // 인증 체크 및 사용자 정보 로드
   useEffect(() => {
@@ -121,6 +172,7 @@ export default function MainApp() {
       
       // 사용자 정보 설정 후 팔로잉 데이터와 홈피드 로드
       loadFollowingData().then(() => {
+        // currentUser가 설정된 후에 홈피드 로드
         loadHomeFeed()
       })
     } else {
@@ -172,7 +224,10 @@ export default function MainApp() {
           
           // 사용자 정보 설정 후 팔로잉 데이터와 홈피드 로드
           loadFollowingData().then(() => {
-            loadHomeFeed()
+            // currentUser가 설정된 후에 홈피드 로드
+            setTimeout(() => {
+              loadHomeFeed()
+            }, 100)
           })
         }
       }
@@ -188,8 +243,10 @@ export default function MainApp() {
       }
       setCurrentUser(userInfo)
       
-      // 에러 시에도 홈피드 로드 시도
-      loadHomeFeed()
+      // 에러 시에도 홈피드 로드 시도 (currentUser 설정 후)
+      setTimeout(() => {
+        loadHomeFeed()
+      }, 100)
     }
   }
 
@@ -229,6 +286,13 @@ export default function MainApp() {
   const loadDefaultHomeFeed = async () => {
     try {
       const token = localStorage.getItem('token')
+      const userId = localStorage.getItem('userId')
+      
+      if (!userId) {
+        console.error('❌ userId가 없습니다.')
+        return
+      }
+      
       const response = await fetch('http://localhost:3000/api/posts?page=1&limit=20', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -239,19 +303,13 @@ export default function MainApp() {
         const data = await response.json()
         if (data.success) {
           console.log('🔍 기본 홈피드 로드 - 전체 게시글:', data.data.posts)
-          console.log('🔍 현재 사용자 ID:', currentUser?.id)
-          console.log('🔍 현재 사용자 정보:', currentUser)
-          
-          if (!currentUser?.id) {
-            console.error('❌ currentUser.id가 설정되지 않음!')
-            return
-          }
+          console.log('🔍 현재 사용자 ID:', userId)
           
           // 내 게시물 제외하고 인기게시글(좋아요 5개 이상)과 팔로워 게시글 구분
           const filteredPosts = data.data.posts
             .filter((post: any) => {
-              const isMyPost = post.user_id === currentUser.id
-              console.log(`게시글 ${post.id}: user_id=${post.user_id}, currentUser.id=${currentUser.id}, 내게시글=${isMyPost}`)
+              const isMyPost = post.user_id === userId
+              console.log(`게시글 ${post.id}: user_id=${post.user_id}, userId=${userId}, 내게시글=${isMyPost}`)
               return !isMyPost // 내 게시물이 아닌 것만 반환
             })
             .map((post: any) => {
@@ -312,6 +370,17 @@ export default function MainApp() {
           const transformedPosts = data.data.posts.map(transformPostData)
           
           console.log('🎯 변환된 게시글:', transformedPosts)
+          console.log('🔍 카테고리별 게시글 분포:')
+          const categoryCounts: { [key: string]: number } = {}
+          transformedPosts.forEach((post: Post) => {
+            const category = post.category || '자유'
+            categoryCounts[category] = (categoryCounts[category] || 0) + 1
+          })
+          console.log('📊 카테고리별 개수:', categoryCounts)
+          console.log('🔍 각 게시글의 카테고리 상세:')
+          transformedPosts.forEach((post: Post) => {
+            console.log(`  - ${post.id}: ${post.title} (카테고리: ${post.category || '자유'})`)
+          })
           
           // 현재 메뉴에 따라 적절한 필터링 적용
           if (activeMenu === 'home') {
@@ -324,7 +393,18 @@ export default function MainApp() {
             // 커뮤니티에서는 모든 게시글 표시
             console.log('💬 커뮤니티 - 모든 게시글 표시:', transformedPosts)
             setPosts(transformedPosts)
-            setFilteredPosts(transformedPosts)
+            
+            // 현재 선택된 카테고리에 따라 필터링 적용
+            if (selectedCategory !== '전체') {
+              const filtered = transformedPosts.filter((post: Post) => {
+                const postCategory = post.category || '자유'
+                return postCategory === selectedCategory
+              })
+              setFilteredPosts(filtered)
+              console.log(`🔄 현재 선택된 카테고리(${selectedCategory})에 맞게 필터링:`, filtered.length)
+            } else {
+              setFilteredPosts(transformedPosts)
+            }
           }
         } else {
           console.log('⚠️ data.data.posts가 배열이 아님:', data.data)
@@ -387,22 +467,35 @@ export default function MainApp() {
     const title = draftTitle.trim()
     if (!text || !title) return
     
+    // 카테고리 값 확인 및 로깅
+    const selectedCategory = draftCat || CATEGORIES[0]
+    console.log('📝 게시글 작성 시작:', { 
+      title, 
+      text, 
+      draftCat, 
+      selectedCategory,
+      availableCategories: CATEGORIES 
+    })
     setIsLoading(true)
     
     try {
       const token = localStorage.getItem('token')
+      const postData = {
+        title: title,
+        content: text,
+        category: selectedCategory,
+        temperature_change: 0
+      }
+      
+      console.log('📤 서버로 전송할 데이터:', postData)
+      
       const response = await fetch('http://localhost:3000/api/posts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          title: title,
-          content: text,
-          category: draftCat,
-          temperature_change: 0
-        })
+        body: JSON.stringify(postData)
       })
       
       const data = await response.json()
@@ -410,17 +503,31 @@ export default function MainApp() {
       if (data.success) {
         console.log('✅ 게시글 작성 성공!')
         
-        // 홈피드인 경우 홈피드 새로고침 (내 게시물 제외), 아니면 일반 게시글 새로고침
-        if (activeMenu === 'home') {
-          await loadHomeFeed() // 내 게시물 제외된 홈피드 로드
-        } else if (activeMenu === 'myposts') {
-          await loadMyPosts() // 내 게시글만 로드
-        } else {
-          await fetchPosts() // 커뮤니티에서는 모든 게시글 표시
-        }
+                 // 홈피드인 경우 홈피드 새로고침 (내 게시물 제외), 아니면 일반 게시글 새로고침
+         if (activeMenu === 'home') {
+           await loadHomeFeed() // 내 게시물 제외된 홈피드 로드
+         } else if (activeMenu === 'myposts') {
+           await loadMyPosts() // 내 게시글만 로드
+         } else {
+           await fetchPosts() // 커뮤니티에서는 모든 게시글 표시
+           
+           // 현재 선택된 카테고리에 맞게 필터링 적용 (posts 상태가 업데이트된 후)
+           setTimeout(() => {
+             if (selectedCategory !== '전체') {
+               const currentPosts = posts // 현재 posts 상태 사용
+               const filtered = currentPosts.filter((post: Post) => {
+                 const postCategory = post.category || '자유'
+                 return postCategory === selectedCategory
+               })
+               setFilteredPosts(filtered)
+               console.log(`🔄 게시글 작성 후 ${selectedCategory} 카테고리 필터링 유지:`, filtered.length)
+             }
+           }, 200) // 지연 시간을 늘려 posts 상태 업데이트 완료 후 실행
+         }
         
         setDraftText('')
         setDraftTitle('')
+        setDraftCat(CATEGORIES[0]) // 카테고리를 기본값으로 초기화
         
         // 해시태그 추출 및 트렌딩 업데이트
         const newHashtags = extractHashtags(text)
@@ -539,22 +646,68 @@ export default function MainApp() {
     setEditCategory('')
   }
 
+  // 토큰 유효성 검증
+  const validateToken = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return false
+      
+      // 간단한 API 호출로 토큰 유효성 검증
+      const response = await fetch('http://localhost:3000/api/posts', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      return response.ok
+    } catch (error) {
+      console.error('토큰 검증 실패:', error)
+      return false
+    }
+  }
+
   // 좋아요 토글
   const toggleLike = async (postId: string) => {
     try {
       const token = localStorage.getItem('token')
+      
+      if (!token) {
+        console.error('❌ 인증 토큰이 없습니다.')
+        alert('로그인이 필요합니다.')
+        return
+      }
+
+      // 토큰 유효성 검증
+      const isTokenValid = await validateToken()
+      if (!isTokenValid) {
+        console.error('❌ 토큰이 유효하지 않습니다.')
+        alert('로그인이 만료되었습니다. 다시 로그인해주세요.')
+        navigate('/')
+        return
+      }
+      
       const response = await fetch(`http://localhost:3000/api/posts/${postId}/like`, {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         }
       })
       
       if (response.ok) {
         const data = await response.json()
-        console.log('좋아요 응답:', data)
         
         if (data.success) {
+          // 로컬 스토리지에 좋아요 상태 저장
+          const newLikedIds = new Set(likedPostIds)
+          if (data.data.liked) {
+            newLikedIds.add(postId)
+          } else {
+            newLikedIds.delete(postId)
+          }
+          setLikedPostIds(newLikedIds)
+          saveLikedPostIds(Array.from(newLikedIds))
+          
           // 좋아요 상태 업데이트 (posts와 filteredPosts 모두)
           const updatedPosts = posts.map(post => {
             if (post.id === postId) {
@@ -580,20 +733,23 @@ export default function MainApp() {
           
           setPosts(updatedPosts)
           setFilteredPosts(updatedFilteredPosts)
-          
-          console.log('✅ 좋아요 상태 업데이트 완료:', {
-            postId,
-            liked: data.data.liked,
-            likes: data.data.likes
-          })
         } else {
           console.error('❌ 좋아요 처리 실패:', data.error)
+          alert('좋아요 처리에 실패했습니다: ' + data.error)
         }
+      } else if (response.status === 401) {
+        console.error('❌ 인증 실패 (401)')
+        alert('로그인이 만료되었습니다. 다시 로그인해주세요.')
+        navigate('/')
       } else {
         console.error('❌ 좋아요 API 오류:', response.status)
+        const errorText = await response.text().catch(() => '알 수 없는 오류')
+        console.error('❌ 오류 상세:', errorText)
+        alert('좋아요 처리 중 오류가 발생했습니다: ' + errorText)
       }
     } catch (error) {
       console.error('💥 좋아요 처리 실패:', error)
+      alert('좋아요 처리 중 오류가 발생했습니다.')
     }
   }
 
@@ -603,6 +759,24 @@ export default function MainApp() {
 
     try {
       const token = localStorage.getItem('token')
+      
+      if (!token) {
+        console.error('❌ 인증 토큰이 없습니다.')
+        alert('로그인이 필요합니다.')
+        return
+      }
+
+      // 토큰 유효성 검증
+      const isTokenValid = await validateToken()
+      if (!isTokenValid) {
+        console.error('❌ 토큰이 유효하지 않습니다.')
+        alert('로그인이 만료되었습니다. 다시 로그인해주세요.')
+        navigate('/')
+        return
+      }
+
+      console.log('🔑 댓글 작성 토큰 확인:', token.substring(0, 20) + '...')
+      
       const response = await fetch(`http://localhost:3000/api/posts/${postId}/comments`, {
         method: 'POST',
         headers: {
@@ -614,6 +788,8 @@ export default function MainApp() {
         })
       })
 
+      console.log('📡 댓글 작성 API 응답 상태:', response.status)
+      
       if (response.ok) {
         // 댓글 추가 후 게시글 목록 새로고침
         await fetchPosts()
@@ -621,9 +797,19 @@ export default function MainApp() {
         setReplyingTo(null)
         
         console.log('✅ 댓글 작성 완료')
+        alert('댓글이 작성되었습니다.')
+      } else if (response.status === 401) {
+        console.error('❌ 댓글 작성 인증 실패 (401)')
+        alert('로그인이 만료되었습니다. 다시 로그인해주세요.')
+        navigate('/')
+      } else {
+        console.error('❌ 댓글 작성 API 오류:', response.status)
+        const errorData = await response.json().catch(() => ({}))
+        alert('댓글 작성 중 오류가 발생했습니다: ' + (errorData.error || '알 수 없는 오류'))
       }
     } catch (error) {
-      console.error('댓글 작성 실패:', error)
+      console.error('💥 댓글 작성 실패:', error)
+      alert('댓글 작성 중 오류가 발생했습니다.')
     }
   }
 
@@ -714,14 +900,40 @@ export default function MainApp() {
 
   // 카테고리 필터링 함수
   const filterByCategory = (category: string) => {
+    console.log('🔍 카테고리 필터링 시작:', category)
+    console.log('📊 현재 전체 게시글 수:', posts.length)
+    console.log('📊 현재 필터링된 게시글 수:', filteredPosts.length)
+    console.log('📊 전체 게시글 카테고리 분포:', posts.map(p => ({ id: p.id, title: p.title, category: p.category || '자유' })))
+    
     setSelectedCategory(category)
+    
     if (category === '전체') {
       setFilteredPosts(posts)
+      console.log('✅ 전체 게시글 표시:', posts.length)
     } else {
-      const filtered = posts.filter(post => post.category === category)
+      const filtered = posts.filter((post: Post) => {
+        const postCategory = post.category || '자유'
+        const matches = postCategory === category
+        if (matches) {
+          console.log(`✅ 매칭 게시글: ${post.id} - ${post.title} (카테고리: ${postCategory})`)
+        } else {
+          console.log(`❌ 불일치: ${post.id} - ${post.title} (카테고리: ${postCategory}, 찾는 카테고리: ${category})`)
+        }
+        return matches
+      })
+      console.log(`✅ ${category} 카테고리 게시글 필터링 완료:`, filtered.length)
       setFilteredPosts(filtered)
     }
   }
+
+  // 카테고리별 게시글 개수 계산
+  const getCategoryPostCount = (category: string) => {
+    if (category === '전체') return posts.length;
+    return posts.filter(post => {
+      const postCategory = post.category || '자유'
+      return postCategory === category
+    }).length;
+  };
 
   // 게시글 데이터 변환 함수
   const transformPostData = (post: any) => {
@@ -803,9 +1015,15 @@ export default function MainApp() {
     try {
       setIsFollowingLoading(true)
       const token = localStorage.getItem('token')
+      const userId = localStorage.getItem('userId')
       
-      // 팔로잉 목록 로드
-      const followingResponse = await fetch(`http://localhost:3000/api/follow/following/${currentUser?.id}`, {
+      if (!userId) {
+        console.error('❌ userId가 없습니다.')
+        return
+      }
+      
+      // 팔로잉 목록 로드 (사용자 정보 포함)
+      const followingResponse = await fetch(`http://localhost:3000/api/follow/following/${userId}?page=1&limit=50`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -813,15 +1031,77 @@ export default function MainApp() {
       
       if (followingResponse.ok) {
         const followingData = await followingResponse.json()
+        console.log('📊 팔로잉 API 응답:', followingData)
         if (followingData.success) {
-          const followingIds = followingData.data.following?.map((f: any) => f.following_id) || []
-          setFollowingList(followingIds)
-          console.log('✅ 팔로잉 목록 로드 성공:', followingIds)
+          // 백엔드 응답 구조: { follows: Array, total: number, page: number, limit: number }
+          const followingUsers = followingData.data.follows || []
+          console.log('📋 팔로잉 사용자 목록:', followingUsers)
+          setFollowingList(followingUsers.map((f: any) => f.following_id))
+          console.log('✅ 팔로잉 목록 로드 성공:', followingUsers)
+          
+          // 팔로잉 사용자들의 상세 정보 가져오기
+          const followingWithDetails = await Promise.all(
+            followingUsers.map(async (follow: any) => {
+              try {
+                // 사용자 기본 정보를 직접 가져오기 (간단한 사용자 정보 API 사용)
+                const userResponse = await fetch(`http://localhost:3000/api/users/${follow.following_id}`, {
+                  headers: { 'Authorization': `Bearer ${token}` }
+                })
+                
+                if (userResponse.ok) {
+                  const userData = await userResponse.json()
+                  console.log('👤 팔로잉 사용자 정보 응답:', userData)
+                  
+                  if (userData.success && userData.data) {
+                    // 데이터 구조에 따라 닉네임과 온도 추출
+                    let nickname = '사용자';
+                    let temperature = 36.5;
+                    
+                    if (userData.data.nickname) {
+                      nickname = userData.data.nickname;
+                    } else if (userData.data.user && userData.data.user.nickname) {
+                      nickname = userData.data.user.nickname;
+                    }
+                    
+                    if (userData.data.temperature) {
+                      temperature = userData.data.temperature;
+                    } else if (userData.data.user && userData.data.user.temperature) {
+                      temperature = userData.data.user.temperature;
+                    }
+                    
+                    console.log('✅ 팔로잉 사용자 정보 추출:', { nickname, temperature })
+                    
+                    return {
+                      ...follow,
+                      nickname: nickname,
+                      temperature: temperature
+                    }
+                  }
+                }
+                
+                // API 호출 실패 시 기본값 반환
+                return {
+                  ...follow,
+                  nickname: `사용자 ${follow.following_id.substring(0, 8)}`,
+                  temperature: 36.5
+                }
+              } catch (error) {
+                console.error('사용자 정보 로드 실패:', error)
+                return {
+                  ...follow,
+                  nickname: `사용자 ${follow.following_id.substring(0, 8)}`,
+                  temperature: 36.5
+                }
+              }
+            })
+          )
+          console.log('✅ 팔로잉 상세 정보:', followingWithDetails)
+          setFollowingUsers(followingWithDetails)
         }
       }
       
-      // 팔로워 목록 로드
-      const followersResponse = await fetch(`http://localhost:3000/api/follow/followers/${currentUser?.id}`, {
+      // 팔로워 목록 로드 (사용자 정보 포함)
+      const followersResponse = await fetch(`http://localhost:3000/api/follow/followers/${userId}?page=1&limit=50`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -829,10 +1109,72 @@ export default function MainApp() {
       
       if (followersResponse.ok) {
         const followersData = await followersResponse.json()
+        console.log('📊 팔로워 API 응답:', followersData)
         if (followersData.success) {
-          const followerIds = followersData.data.followers?.map((f: any) => f.follower_id) || []
-          setFollowersList(followerIds)
-          console.log('✅ 팔로워 목록 로드 성공:', followerIds)
+          // 백엔드 응답 구조: { follows: Array, total: number, page: number, limit: number }
+          const followerUsers = followersData.data.follows || []
+          console.log('📋 팔로워 사용자 목록:', followerUsers)
+          setFollowersList(followerUsers.map((f: any) => f.follower_id))
+          console.log('✅ 팔로워 목록 로드 성공:', followerUsers)
+          
+          // 팔로워 사용자들의 상세 정보 가져오기
+          const followersWithDetails = await Promise.all(
+            followerUsers.map(async (follow: any) => {
+              try {
+                // 사용자 기본 정보를 직접 가져오기 (간단한 사용자 정보 API 사용)
+                const userResponse = await fetch(`http://localhost:3000/api/users/${follow.follower_id}`, {
+                  headers: { 'Authorization': `Bearer ${token}` }
+                })
+                
+                if (userResponse.ok) {
+                  const userData = await userResponse.json()
+                  console.log('👤 팔로워 사용자 정보 응답:', userData)
+                  
+                  if (userData.success && userData.data) {
+                    // 데이터 구조에 따라 닉네임과 온도 추출
+                    let nickname = '사용자';
+                    let temperature = 36.5;
+                    
+                    if (userData.data.nickname) {
+                      nickname = userData.data.nickname;
+                    } else if (userData.data.user && userData.data.user.nickname) {
+                      nickname = userData.data.user.nickname;
+                    }
+                    
+                    if (userData.data.temperature) {
+                      temperature = userData.data.temperature;
+                    } else if (userData.data.user && userData.data.user.temperature) {
+                      temperature = userData.data.user.temperature;
+                    }
+                    
+                    console.log('✅ 팔로워 사용자 정보 추출:', { nickname, temperature })
+                    
+                    return {
+                      ...follow,
+                      nickname: nickname,
+                      temperature: temperature
+                    }
+                  }
+                }
+                
+                // API 호출 실패 시 기본값 반환
+                return {
+                  ...follow,
+                  nickname: `사용자 ${follow.follower_id.substring(0, 8)}`,
+                  temperature: 36.5
+                }
+              } catch (error) {
+                console.error('사용자 정보 로드 실패:', error)
+                return {
+                  ...follow,
+                  nickname: `사용자 ${follow.follower_id.substring(0, 8)}`,
+                  temperature: 36.5
+                }
+              }
+            })
+          )
+          console.log('✅ 팔로워 상세 정보:', followersWithDetails)
+          setFollowersUsers(followersWithDetails)
         }
       }
     } catch (error) {
@@ -886,7 +1228,7 @@ export default function MainApp() {
   }
 
   // 메뉴 변경 핸들러
-  const handleMenuChange = (menu: 'home' | 'following' | 'community' | 'myposts') => {
+  const handleMenuChange = (menu: 'home' | 'following' | 'community' | 'myposts' | 'randomchat' | 'myroom') => {
     setActiveMenu(menu)
     
     switch (menu) {
@@ -904,6 +1246,18 @@ export default function MainApp() {
       case 'myposts':
         loadMyPosts()
         break
+      case 'randomchat':
+        // 랜덤채팅 페이지
+        console.log('랜덤채팅 페이지로 이동')
+        break
+      case 'myroom':
+        // 마이룸을 클릭하면 현재 사용자의 프로필 페이지로 이동
+        if (currentUser?.id) {
+          navigate(`/profile/${currentUser.id}`)
+        } else {
+          console.error('❌ 현재 사용자 정보가 없습니다.')
+        }
+        break
     }
   }
 
@@ -919,14 +1273,24 @@ export default function MainApp() {
     try {
       const token = localStorage.getItem('token')
       console.log('🔍 사용자 검색 시작:', userSearchQuery)
+      console.log('🔑 토큰 상태:', token ? '존재함' : '없음')
+      console.log('🔑 토큰 내용:', token ? token.substring(0, 20) + '...' : 'N/A')
       
-      const response = await fetch(`http://localhost:3000/api/auth/search?q=${encodeURIComponent(userSearchQuery)}`, {
+      if (!token) {
+        console.error('❌ 인증 토큰이 없습니다.')
+        alert('로그인이 필요합니다. 다시 로그인해주세요.')
+        navigate('/')
+        return
+      }
+      
+      const response = await fetch(`http://localhost:3000/api/users/search?q=${encodeURIComponent(userSearchQuery)}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
 
       console.log('📡 사용자 검색 응답:', response.status)
+      console.log('📡 응답 헤더:', Object.fromEntries(response.headers.entries()))
 
       if (response.ok) {
         const data = await response.json()
@@ -943,7 +1307,15 @@ export default function MainApp() {
         }
       } else {
         console.error('❌ 사용자 검색 HTTP 오류:', response.status)
+        const errorText = await response.text()
+        console.error('❌ 오류 상세:', errorText)
         setUserSearchResults([])
+        
+        if (response.status === 401) {
+          console.error('❌ 인증 실패 (401)')
+          alert('로그인이 만료되었습니다. 다시 로그인해주세요.')
+          navigate('/')
+        }
       }
     } catch (error) {
       console.error('💥 사용자 검색 실패:', error)
@@ -1040,6 +1412,18 @@ export default function MainApp() {
             >
               📝 내 게시글
             </button>
+                         <button 
+               className={`menu-item ${activeMenu === 'randomchat' ? 'active' : ''}`}
+               onClick={() => handleMenuChange('randomchat')}
+             >
+               🎯 랜덤채팅
+             </button>
+             <button 
+               className={`menu-item ${activeMenu === 'myroom' ? 'active' : ''}`}
+               onClick={() => handleMenuChange('myroom')}
+             >
+               🏠 마이룸
+             </button>
           </nav>
 
           {/* 홈피드일 때만 내 정보 표시 */}
@@ -1136,15 +1520,24 @@ export default function MainApp() {
               />
 
               <div className="mini-row">
-                <select
-                  className="mini-select"
-                  value={draftCat}
-                  onChange={(e) => setDraftCat(e.target.value)}
-                >
-                  {CATEGORIES.map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
+                <div className="category-selector">
+                  <label htmlFor="category-select">📂 카테고리:</label>
+                  <select
+                    id="category-select"
+                    className="mini-select"
+                    value={draftCat}
+                    onChange={(e) => {
+                      const newCategory = e.target.value
+                      console.log('🎯 카테고리 선택됨:', { old: draftCat, new: newCategory })
+                      setDraftCat(newCategory)
+                    }}
+                  >
+                    {CATEGORIES.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <span className="selected-category-display">선택됨: {draftCat}</span>
+                </div>
 
                 <div className="mini-actions">
                   <button className="pill">📷 사진</button>
@@ -1236,39 +1629,106 @@ export default function MainApp() {
                 )}
               </div>
               
-              <div className="following-tabs">
-                <button className="tab active">팔로잉 ({followingList.length})</button>
-                <button className="tab">팔로워 ({followersList.length})</button>
-              </div>
-              <div className="following-list">
-                {isFollowingLoading ? (
-                  <div className="loading">로딩중...</div>
-                ) : followingList.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="empty-icon">👥</div>
-                    <h3>아직 팔로우한 사용자가 없습니다</h3>
-                    <p>커뮤니티에서 관심 있는 사용자를 팔로우해보세요!</p>
-                  </div>
-                ) : (
-                  <div className="user-list">
-                    {followingList.map((userId: string) => (
-                      <div key={userId} className="user-item">
-                        <div className="user-avatar">{userId.charAt(0)}</div>
-                        <div className="user-info">
-                          <h4>사용자 {userId}</h4>
-                          <p>팔로잉 중</p>
-                        </div>
-                        <button 
-                          className="btn ghost small"
-                          onClick={() => toggleFollow(userId)}
-                        >
-                          언팔로우
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                             <div className="following-tabs">
+                 <button 
+                   className={`tab ${activeFollowTab === 'following' ? 'active' : ''}`}
+                   onClick={() => setActiveFollowTab('following')}
+                 >
+                   팔로잉 ({followingUsers.length})
+                 </button>
+                 <button 
+                   className={`tab ${activeFollowTab === 'followers' ? 'active' : ''}`}
+                   onClick={() => setActiveFollowTab('followers')}
+                 >
+                   팔로워 ({followersUsers.length})
+                 </button>
+               </div>
+               
+               {/* 팔로잉 목록 */}
+               {activeFollowTab === 'following' && (
+                 <div className="following-list">
+                   {isFollowingLoading ? (
+                     <div className="loading">로딩중...</div>
+                   ) : followingUsers.length === 0 ? (
+                     <div className="empty-state">
+                       <div className="empty-icon">👥</div>
+                       <h3>아직 팔로우한 사용자가 없습니다</h3>
+                       <p>커뮤니티에서 관심 있는 사용자를 팔로우해보세요!</p>
+                     </div>
+                   ) : (
+                     <div className="user-list">
+                       {followingUsers.map((user: any) => (
+                         <div key={user.following_id} className="user-item">
+                           <div className="user-avatar">
+                             {user.nickname?.charAt(0) || user.following_id.charAt(0)}
+                           </div>
+                           <div className="user-info">
+                             <h4>{user.nickname || `사용자 ${user.following_id.substring(0, 8)}`}</h4>
+                             <p>🔥 {user.temperature || 36.5}℃</p>
+                           </div>
+                           <div className="user-actions">
+                             <button 
+                               className="btn primary small"
+                               onClick={() => visitUserProfile(user.following_id, user.nickname)}
+                             >
+                               프로필
+                             </button>
+                             <button 
+                               className="btn ghost small"
+                               onClick={() => toggleFollow(user.following_id)}
+                             >
+                               언팔로우
+                             </button>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                   )}
+                 </div>
+               )}
+               
+               {/* 팔로워 목록 */}
+               {activeFollowTab === 'followers' && (
+                 <div className="following-list">
+                   {isFollowingLoading ? (
+                     <div className="loading">로딩중...</div>
+                   ) : followersUsers.length === 0 ? (
+                     <div className="empty-state">
+                       <div className="empty-icon">👥</div>
+                       <h3>아직 팔로워가 없습니다</h3>
+                       <p>더 많은 게시글을 작성하고 활동해보세요!</p>
+                     </div>
+                   ) : (
+                     <div className="user-list">
+                       {followersUsers.map((user: any) => (
+                         <div key={user.follower_id} className="user-item">
+                           <div className="user-avatar">
+                             {user.nickname?.charAt(0) || user.follower_id.charAt(0)}
+                           </div>
+                           <div className="user-info">
+                             <h4>{user.nickname || `사용자 ${user.follower_id.substring(0, 8)}`}</h4>
+                             <p>🔥 {user.temperature || 36.5}℃</p>
+                           </div>
+                           <div className="user-actions">
+                             <button 
+                               className="btn primary small"
+                               onClick={() => visitUserProfile(user.follower_id, user.nickname)}
+                             >
+                               프로필
+                             </button>
+                             <button 
+                               className={`btn ${followingList.includes(user.follower_id) ? 'ghost' : 'primary'} small`}
+                               onClick={() => toggleFollow(user.follower_id)}
+                             >
+                               {followingList.includes(user.follower_id) ? '언팔로우' : '팔로우'}
+                             </button>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                   )}
+                 </div>
+               )}
             </div>
           )}
 
@@ -1337,17 +1797,17 @@ export default function MainApp() {
                           <h3 className="post-title">{p.title}</h3>
                           <p className="text">{p.content}</p>
                         </div>
-                        <div className="post-actions">
-                          <button 
-                            className={`chip like-btn ${p.isLiked ? 'liked' : ''}`}
-                            onClick={() => toggleLike(p.id)}
-                          >
-                            {p.isLiked ? '❤️' : '🤍'} 
-                            <span className="like-count">{p.likes || 0}</span>
-                          </button>
-                          <button className="chip">💬 {p.comments?.length || 0}</button>
-                          <button className="chip">↗ 공유</button>
-                        </div>
+                                                    <div className="post-actions">
+                              <button 
+                                className={`like-btn ${likedPostIds.has(p.id) ? 'liked' : ''}`}
+                                onClick={() => toggleLike(p.id)}
+                              >
+                                {likedPostIds.has(p.id) ? '❤️' : '🤍'} 
+                                <span className="like-count">{p.likes || 0}</span>
+                              </button>
+                              <button className="comment-btn">💬 {p.comments?.length || 0}</button>
+                              <button className="share-btn">↗ 공유</button>
+                            </div>
                       </article>
                     ))
                   ) : (
@@ -1386,10 +1846,10 @@ export default function MainApp() {
                               </span>
                             </div>
                             <div className="submeta">
-                              <span className="chip tag">{p.category || '자유'}</span>
-                              <span className="chip temp">🔥 {p.user?.temperature || 36.5}℃</span>
-                              <span className="chip delta">
-                                📈 {p.temperature_change > 0 ? `+${p.temperature_change}℃` : `${p.temperature_change}℃`}
+                              <span className="chip tag category-chip">{p.category || '자유'}</span>
+                              <span className="temperature-chip">
+                                <span className="icon">🔥</span>
+                                {p.user?.temperature || 36.5}℃
                               </span>
                               {/* 팔로워 게시글인지 인기 게시글인지 표시 */}
                               <span className="chip follow-status">
@@ -1482,14 +1942,14 @@ export default function MainApp() {
 
                         <div className="post-actions">
                           <button 
-                            className={`chip like-btn ${p.isLiked ? 'liked' : ''}`}
+                            className={`like-btn ${likedPostIds.has(p.id) ? 'liked' : ''}`}
                             onClick={() => toggleLike(p.id)}
                           >
-                            {p.isLiked ? '❤️' : '🤍'} 
+                            {likedPostIds.has(p.id) ? '❤️' : '🤍'} 
                             <span className="like-count">{p.likes || 0}</span>
                           </button>
                           <button 
-                            className="chip comment-btn"
+                            className="comment-btn"
                             onClick={() => setReplyingTo(replyingTo === p.id ? null : p.id)}
                           >
                             💬 {p.comments?.length || 0}
@@ -1540,10 +2000,28 @@ export default function MainApp() {
           {activeMenu === 'community' && (
             <div className="community-section">
               <h2>💬 커뮤니티</h2>
+              
+              {/* 카테고리 필터링 UI */}
+              <div className="category-filter">
+                <h3>📂 카테고리별 게시글</h3>
+                <div className="category-tabs">
+                  {['전체', ...CATEGORIES].map(category => (
+                    <button
+                      key={category}
+                      className={`category-tab ${selectedCategory === category ? 'active' : ''}`}
+                      onClick={() => filterByCategory(category)}
+                    >
+                      {category}
+                      <span className="post-count">({getCategoryPostCount(category)})</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
               <p className="community-description">
-                {selectedCommunityCategory === '전체' 
+                {selectedCategory === '전체' 
                   ? '모든 사용자들의 게시글을 확인하세요' 
-                  : `${selectedCommunityCategory} 카테고리의 게시글을 확인하세요`
+                  : `${selectedCategory} 카테고리의 게시글을 확인하세요`
                 }
               </p>
               {filteredPosts.length === 0 ? (
@@ -1572,9 +2050,9 @@ export default function MainApp() {
                         </div>
                         <div className="submeta">
                           <span className="chip tag">{p.category || '자유'}</span>
-                          <span className="chip temp">🔥 {p.user?.temperature || 36.5}℃</span>
-                          <span className="chip delta">
-                            📈 {p.temperature_change > 0 ? `+${p.temperature_change}℃` : `${p.temperature_change}℃`}
+                          <span className="temperature-chip">
+                            <span className="icon">🔥</span>
+                            {p.user?.temperature || 36.5}℃
                           </span>
                         </div>
                       </div>
@@ -1585,14 +2063,14 @@ export default function MainApp() {
                     </div>
                     <div className="post-actions">
                       <button 
-                        className={`chip like-btn ${p.isLiked ? 'liked' : ''}`}
+                        className={`like-btn ${likedPostIds.has(p.id) ? 'liked' : ''}`}
                         onClick={() => toggleLike(p.id)}
                       >
-                        {p.isLiked ? '❤️' : '🤍'} 
+                        {likedPostIds.has(p.id) ? '❤️' : '🤍'} 
                         <span className="like-count">{p.likes || 0}</span>
                       </button>
                       <button 
-                        className="chip comment-btn"
+                        className="comment-btn"
                         onClick={() => setReplyingTo(replyingTo === p.id ? null : p.id)}
                       >
                         💬 {p.comments?.length || 0}
@@ -1664,10 +2142,10 @@ export default function MainApp() {
                           </span>
                         </div>
                         <div className="submeta">
-                          <span className="chip tag">{p.category || '자유'}</span>
-                          <span className="chip temp">🔥 {p.user?.temperature || 36.5}℃</span>
-                          <span className="chip delta">
-                            📈 {p.temperature_change > 0 ? `+${p.temperature_change}℃` : `${p.temperature_change}℃`}
+                          <span className="chip tag category-chip">{p.category || '자유'}</span>
+                          <span className="temperature-chip">
+                            <span className="icon">🔥</span>
+                            {p.user?.temperature || 36.5}℃
                           </span>
                         </div>
                       </div>
@@ -1678,14 +2156,14 @@ export default function MainApp() {
                     </div>
                     <div className="post-actions">
                       <button 
-                        className={`chip like-btn ${p.isLiked ? 'liked' : ''}`}
+                        className={`like-btn ${likedPostIds.has(p.id) ? 'liked' : ''}`}
                         onClick={() => toggleLike(p.id)}
                       >
-                        {p.isLiked ? '❤️' : '🤍'} 
+                        {likedPostIds.has(p.id) ? '❤️' : '🤍'} 
                         <span className="like-count">{p.likes || 0}</span>
                       </button>
                       <button 
-                        className="chip comment-btn"
+                        className="btn ghost"
                         onClick={() => setReplyingTo(replyingTo === p.id ? null : p.id)}
                       >
                         💬 {p.comments?.length || 0}
@@ -1727,6 +2205,13 @@ export default function MainApp() {
               )}
             </div>
           )}
+
+                     {/* 랜덤채팅 메뉴일 때 랜덤채팅 컴포넌트 표시 */}
+           {activeMenu === 'randomchat' && (
+             <RandomChat />
+           )}
+           
+           {/* 마이룸 메뉴는 프로필 페이지로 리다이렉트됩니다 */}
         </main>
 
         {/* ===== 우측(트렌드만) ===== */}

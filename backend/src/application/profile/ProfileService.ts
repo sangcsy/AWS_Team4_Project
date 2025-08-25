@@ -16,8 +16,29 @@ export class ProfileService {
     return await this.profileRepository.create(profileData, userId);
   }
 
-  async getProfile(userId: string): Promise<Profile | null> {
-    return await this.profileRepository.findByUserId(userId);
+  async getProfile(userId: string): Promise<any> {
+    // 사용자 기본 정보와 프로필 정보를 함께 조회
+    const profile = await this.profileRepository.findByUserId(userId);
+    
+    // 사용자 기본 정보 조회 (users 테이블)
+    const user = await this.profileRepository.findUserById(userId);
+    
+    // 팔로우 통계 조회
+    const followStats = await this.profileRepository.getFollowStats(userId);
+    
+    // 게시글 통계 조회
+    const postStats = await this.profileRepository.getPostStats(userId);
+    
+    return {
+      user: user || { id: userId, nickname: '사용자', email: '', temperature: 36.5, created_at: new Date() },
+      stats: {
+        total_posts: postStats.totalPosts || 0,
+        total_likes: postStats.totalLikes || 0,
+        total_followers: followStats.followerCount || 0,
+        total_following: followStats.followingCount || 0
+      },
+      profile: profile
+    };
   }
 
   async updateProfile(userId: string, updates: UpdateProfileRequest): Promise<Profile> {
