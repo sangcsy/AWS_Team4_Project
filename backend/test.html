@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEMPUS API 테스트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .api-section {
+            margin-bottom: 40px;
+            border: 1px solid #e1e5e9;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #e1e5e9;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .api-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .api-card {
+            border: 1px solid #e1e5e9;
+            border-radius: 10px;
+            padding: 20px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        
+        .api-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .api-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+                .method {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .method.post { background: #28a745; color: white; }
+        .method.get { background: #007bff; color: white; }
+        .method.put { background: #ffc107; color: black; }
+        .method.delete { background: #dc3545; color: white; }
+        .method.patch { background: #fd7e14; color: white; }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .input-group input:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .input-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .response {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .response.success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .response.error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        .auth-info {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .auth-info h3 {
+            color: #1976d2;
+            margin-bottom: 15px;
+        }
+        
+        .auth-info p {
+            color: #424242;
+            margin-bottom: 10px;
+        }
+        
+        .token-display {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-connected { background: #28a745; }
+        .status-disconnected { background: #dc3545; }
+        
+        @media (max-width: 768px) {
+            .api-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 TEMPUS API 테스트</h1>
+            <p>백엔드 API 기능을 테스트해보세요</p>
+        </div>
+        
+        <div class="content">
+            <!-- 인증 정보 섹션 -->
+            <div class="auth-info">
+                <h3>🔐 인증 정보</h3>
+                <p><strong>현재 토큰:</strong> <span id="currentToken">없음</span></p>
+                <p><strong>사용자 ID:</strong> <span id="currentUserId">없음</span></p>
+                <div class="token-display" id="tokenDisplay" style="display: none;"></div>
+            </div>
+            
+            <!-- User API 섹션 -->
+            <div class="api-section">
+                <div class="section-header">👤 User API</div>
+                <div class="api-grid">
+                    <!-- 회원가입 -->
+                    <div class="api-card">
+                        <div class="api-title">
+                            <span class="method post">POST</span>
+                            회원가입
+                        </div>
+                        <div class="input-group">
+                            <label>이메일:</label>
+                            <input type="email" id="registerEmail" placeholder="test@example.com">
+                        </div>
+                        <div class="input-group">
+                            <label>비밀번호:</label>
+                            <input type="password" id="registerPassword" placeholder="password123">
+                        </div>
+                        <div class="input-group">
+                            <label>닉네임:</label>
+                            <input type="text" id="registerNickname" placeholder="테스트유저">
+                        </div>
+                        <button class="btn" onclick="register()">회원가입</button>
+                        <div class="response" id="registerResponse"></div>
+                    </div>
+                    
+                    <!-- 로그인 -->
+                    <div class="api-card">
+                        <div class="api-title">
+                            <span class="method post">POST</span>
+                            로그인
+                        </div>
+                        <div class="input-group">
+                            <label>이메일:</label>
+                            <input type="email" id="loginEmail" placeholder="test@example.com">
+                        </div>
+                        <div class="input-group">
+                            <label>비밀번호:</label>
+                            <input type="password" id="loginPassword" placeholder="password123">
+                        </div>
+                        <button class="btn" onclick="login()">로그인</button>
+                        <div class="response" id="loginResponse"></div>
+                    </div>
+                    
+                    <!-- 닉네임 확인 -->
+                    <div class="api-card">
+                        <div class="api-title">
+                            <span class="method get">GET</span>
+                            닉네임 확인
+                        </div>
+                        <div class="input-group">
+                            <label>닉네임:</label>
+                            <input type="text" id="checkNickname" placeholder="테스트유저">
+                        </div>
+                        <button class="btn" onclick="checkNickname()">닉네임 확인</button>
+                        <div class="response" id="checkNicknameResponse"></div>
+                    </div>
+                    
+                    <!-- 내 온도 조회 -->
+                    <div class="api-card">
+                        <div class="api-title">
+                            <span class="method get">GET</span>
+                            내 온도 조회
+                        </div>
+                        <button class="btn" onclick="getMyTemperature()">온도 조회</button>
+                        <div class="response" id="getMyTemperatureResponse"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Post API 섹션 -->
+            <div class="api-section">
+                <div class="section-header">📝 Post API</div>
+                <div class="api-grid">
+                    <!-- 게시글 작성 -->
+                    <div class="api-card">
+                        <div class="api-title">
+                            <span class="method post">POST</span>
+                            게시글 작성
+                        </div>
+                        <div class="input-group">
+                            <label>제목:</label>
+                            <input type="text" id="postTitle" placeholder="테스트 게시글 제목">
+                        </div>
+                        <div class="input-group">
+                            <label>내용:</label>
+                            <textarea id="postContent" placeholder="테스트 게시글 내용을 입력하세요..."></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>온도 변화:</label>
+                            <input type="number" id="postTemperature" placeholder="0" value="0">
+                        </div>
+                        <button class="btn" onclick="createPost()">게시글 작성</button>
+                        <div class="response" id="createPostResponse"></div>
+                    </div>
+                    
+                    <!-- 게시글 목록 -->
+                    <div class="api-card">
+                        <div class="api-title">
+                            <span class="method get">GET</span>
+                            게시글 목록
+                        </div>
+                        <div class="input-group">
+                            <label>페이지:</label>
+                            <input type="number" id="postPage" placeholder="1" value="1">
+                        </div>
+                        <div class="input-group">
+                            <label>개수:</label>
+                            <input type="number" id="postLimit" placeholder="10" value="10">
+                        </div>
+                        <button class="btn" onclick="getAllPosts()">게시글 목록 조회</button>
+                        <div class="response" id="getAllPostsResponse"></div>
+                    </div>
+                    
+                    <!-- 특정 게시글 -->
+                    <div class="api-card">
+                        <div class="api-title">
+                            <span class="method get">GET</span>
+                            특정 게시글
+                        </div>
+                        <div class="input-group">
+                            <label>게시글 ID:</label>
+                            <input type="text" id="getPostId" placeholder="게시글 ID 입력">
+                        </div>
+                        <button class="btn" onclick="getPostById()">게시글 조회</button>
+                        <div class="response" id="getPostByIdResponse"></div>
+                    </div>
+                    
+                    <!-- 게시글 수정 -->
+                    <div class="api-card">
+                        <div class="api-title">
+                            <span class="method put">PUT</span>
+                            게시글 수정
+                        </div>
+                        <div class="input-group">
+                            <label>게시글 ID:</label>
+                            <input type="text" id="updatePostId" placeholder="게시글 ID 입력">
+                        </div>
+                        <div class="input-group">
+                            <label>제목:</label>
+                            <input type="text" id="updatePostTitle" placeholder="수정된 제목">
+                        </div>
+                        <div class="input-group">
+                            <label>내용:</label>
+                            <textarea id="updatePostContent" placeholder="수정된 내용"></textarea>
+                        </div>
+                        <button class="btn" onclick="updatePost()">게시글 수정</button>
+                        <div class="response" id="updatePostResponse"></div>
+                    </div>
+                    
+                    <!-- 게시글 삭제 -->
+                    <div class="api-card">
+                        <div class="api-title">
+                            <span class="method delete">DELETE</span>
+                            게시글 삭제
+                        </div>
+                        <div class="input-group">
+                            <label>게시글 ID:</label>
+                            <input type="text" id="deletePostId" placeholder="게시글 ID 입력">
+                        </div>
+                        <button class="btn" onclick="deletePost()">게시글 삭제</button>
+                        <div class="response" id="deletePostResponse"></div>
+                    </div>
+                    
+                    <!-- 게시글 온도 업데이트 -->
+                    <div class="api-card">
+                        <div class="api-title">
+                            <span class="method patch">PATCH</span>
+                            게시글 온도 업데이트
+                        </div>
+                        <div class="input-group">
+                            <label>게시글 ID:</label>
+                            <input type="text" id="updatePostTempId" placeholder="게시글 ID 입력">
+                        </div>
+                        <div class="input-group">
+                            <label>온도 변화:</label>
+                            <input type="number" id="updatePostTempValue" placeholder="0" value="0">
+                        </div>
+                        <button class="btn" onclick="updatePostTemperature()">온도 업데이트</button>
+                        <div class="response" id="updatePostTemperatureResponse"></div>
+                    </div>
+                </div>
+            </div>
+            
+                         <!-- Comment API 섹션 -->
+             <div class="api-section">
+                 <div class="section-header">💬 Comment API</div>
+                 <div class="api-grid">
+                     <!-- 댓글 작성 -->
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method post">POST</span>
+                             댓글 작성
+                         </div>
+                         <div class="input-group">
+                             <label>게시글 ID:</label>
+                             <input type="text" id="commentPostId" placeholder="게시글 ID 입력">
+                         </div>
+                         <div class="input-group">
+                             <label>댓글 내용:</label>
+                             <textarea id="commentContent" placeholder="댓글 내용을 입력하세요..."></textarea>
+                         </div>
+                         <div class="input-group">
+                             <label>온도 변화:</label>
+                             <input type="number" id="commentTemperature" placeholder="0" value="0">
+                         </div>
+                         <button class="btn" onclick="handleCreateComment()">댓글 작성</button>
+                         <div class="response" id="createCommentResponse"></div>
+                     </div>
+                     
+                     <!-- 게시글별 댓글 -->
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method get">GET</span>
+                             게시글별 댓글
+                         </div>
+                         <div class="input-group">
+                             <label>게시글 ID:</label>
+                             <input type="text" id="getCommentsPostId" placeholder="게시글 ID 입력">
+                         </div>
+                         <div class="input-group">
+                             <label>페이지:</label>
+                             <input type="number" id="commentPage" placeholder="1" value="1">
+                         </div>
+                         <div class="input-group">
+                             <label>개수:</label>
+                             <input type="number" id="commentLimit" placeholder="10" value="10">
+                         </div>
+                         <button class="btn" onclick="getCommentsByPost()">댓글 조회</button>
+                         <div class="response" id="getCommentsByPostResponse"></div>
+                     </div>
+                     
+                     <!-- 특정 댓글 -->
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method get">GET</span>
+                             특정 댓글
+                         </div>
+                         <div class="input-group">
+                             <label>댓글 ID:</label>
+                             <input type="text" id="getCommentId" placeholder="댓글 ID 입력">
+                         </div>
+                         <button class="btn" onclick="getCommentById()">댓글 조회</button>
+                         <div class="response" id="getCommentByIdResponse"></div>
+                     </div>
+                     
+                     <!-- 댓글 수정 -->
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method put">PUT</span>
+                             댓글 수정
+                         </div>
+                         <div class="input-group">
+                             <label>댓글 ID:</label>
+                             <input type="text" id="updateCommentId" placeholder="댓글 ID 입력">
+                         </div>
+                         <div class="input-group">
+                             <label>내용:</label>
+                             <textarea id="updateCommentContent" placeholder="수정된 댓글 내용"></textarea>
+                         </div>
+                         <button class="btn" onclick="updateComment()">댓글 수정</button>
+                         <div class="response" id="updateCommentResponse"></div>
+                     </div>
+                     
+                     <!-- 댓글 삭제 -->
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method delete">DELETE</span>
+                             댓글 삭제
+                         </div>
+                         <div class="input-group">
+                             <label>댓글 ID:</label>
+                             <input type="text" id="deleteCommentId" placeholder="댓글 ID 입력">
+                         </div>
+                         <button class="btn" onclick="deleteComment()">댓글 삭제</button>
+                         <div class="response" id="deleteCommentResponse"></div>
+                     </div>
+                     
+                     <!-- 댓글 온도 업데이트 -->
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method patch">PATCH</span>
+                             댓글 온도 업데이트
+                         </div>
+                         <div class="input-group">
+                             <label>댓글 ID:</label>
+                             <input type="text" id="updateCommentTempId" placeholder="댓글 ID 입력">
+                         </div>
+                         <div class="input-group">
+                             <label>온도 변화:</label>
+                             <input type="number" id="updateCommentTempValue" placeholder="0" value="0">
+                         </div>
+                         <button class="btn" onclick="updateCommentTemperature()">온도 업데이트</button>
+                         <div class="response" id="updateCommentTemperatureResponse"></div>
+                     </div>
+                 </div>
+             </div>
+
+             <!-- 마이룸 API 섹션 -->
+             <div class="api-section">
+                 <div class="section-header">🏠 마이룸 API</div>
+                 <div class="api-grid">
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method post">POST</span>
+                             마이룸 생성
+                         </div>
+                         <div class="input-group">
+                             <label>프로필 이미지:</label>
+                             <input type="text" id="myroomProfileImage" placeholder="프로필 이미지 URL">
+                         </div>
+                         <div class="input-group">
+                             <label>소개:</label>
+                             <textarea id="myroomBio" placeholder="자기소개 입력"></textarea>
+                         </div>
+                         <button class="btn" onclick="createMyRoom()">마이룸 생성</button>
+                         <div class="response" id="createMyRoomResult"></div>
+                     </div>
+
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method get">GET</span>
+                             마이룸 조회
+                         </div>
+                         <button class="btn" onclick="getMyRoom()">마이룸 조회</button>
+                         <div class="response" id="getMyRoomResult"></div>
+                     </div>
+
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method patch">PATCH</span>
+                             온도 업데이트
+                         </div>
+                         <div class="input-group">
+                             <label>온도 변화:</label>
+                             <input type="number" id="temperatureChange" placeholder="온도 변화값 (예: 0.5, -0.3)" step="0.1">
+                         </div>
+                         <button class="btn" onclick="updateTemperature()">온도 업데이트</button>
+                         <div class="response" id="updateTemperatureResult"></div>
+                     </div>
+
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method post">POST</span>
+                             아이템 추가
+                         </div>
+                         <div class="input-group">
+                             <label>아이템 이름:</label>
+                             <input type="text" id="itemName" placeholder="아이템 이름">
+                         </div>
+                         <div class="input-group">
+                             <label>설명:</label>
+                             <textarea id="itemDescription" placeholder="아이템 설명"></textarea>
+                         </div>
+                         <div class="input-group">
+                             <label>타입:</label>
+                             <select id="itemType">
+                                 <option value="DECORATION">DECORATION</option>
+                                 <option value="BADGE">BADGE</option>
+                                 <option value="TROPHY">TROPHY</option>
+                                 <option value="SPECIAL">SPECIAL</option>
+                             </select>
+                         </div>
+                         <div class="input-group">
+                             <label>희귀도:</label>
+                             <select id="itemRarity">
+                                 <option value="COMMON">COMMON</option>
+                                 <option value="RARE">RARE</option>
+                                 <option value="EPIC">EPIC</option>
+                                 <option value="LEGENDARY">LEGENDARY</option>
+                             </select>
+                         </div>
+                         <button class="btn" onclick="addItem()">아이템 추가</button>
+                         <div class="response" id="addItemResult"></div>
+                     </div>
+
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method get">GET</span>
+                             아이템 목록
+                         </div>
+                         <button class="btn" onclick="getItems()">아이템 조회</button>
+                         <div class="response" id="getItemsResult"></div>
+                     </div>
+                 </div>
+             </div>
+
+             <!-- 팔로우 API 섹션 -->
+             <div class="api-section">
+                 <div class="section-header">👥 팔로우 API</div>
+                 <div class="api-grid">
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method post">POST</span>
+                             사용자 팔로우
+                         </div>
+                         <div class="input-group">
+                             <label>팔로우할 사용자 ID:</label>
+                             <input type="text" id="followUserId" placeholder="사용자 ID 입력">
+                         </div>
+                         <button class="btn" onclick="followUser()">팔로우</button>
+                         <div class="response" id="followUserResult"></div>
+                     </div>
+
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method delete">DELETE</span>
+                             사용자 언팔로우
+                         </div>
+                         <div class="input-group">
+                             <label>언팔로우할 사용자 ID:</label>
+                             <input type="text" id="unfollowUserId" placeholder="사용자 ID 입력">
+                         </div>
+                         <button class="btn" onclick="unfollowUser()">언팔로우</button>
+                         <div class="response" id="unfollowUserResult"></div>
+                     </div>
+
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method get">GET</span>
+                             팔로워 목록
+                         </div>
+                         <div class="input-group">
+                             <label>사용자 ID:</label>
+                             <input type="text" id="getFollowersUserId" placeholder="사용자 ID 입력">
+                         </div>
+                         <div class="input-group">
+                             <label>페이지:</label>
+                             <input type="number" id="getFollowersPage" value="1" min="1">
+                         </div>
+                         <div class="input-group">
+                             <label>개수:</label>
+                             <input type="number" id="getFollowersLimit" value="10" min="1" max="100">
+                         </div>
+                         <button class="btn" onclick="getFollowers()">팔로워 조회</button>
+                         <div class="response" id="getFollowersResult"></div>
+                     </div>
+
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method get">GET</span>
+                             팔로잉 목록
+                         </div>
+                         <div class="input-group">
+                             <label>사용자 ID:</label>
+                             <input type="text" id="getFollowingUserId" placeholder="사용자 ID 입력">
+                         </div>
+                         <div class="input-group">
+                             <label>페이지:</label>
+                             <input type="number" id="getFollowingPage" value="1" min="1">
+                         </div>
+                         <div class="input-group">
+                             <label>개수:</label>
+                             <input type="number" id="getFollowingLimit" value="10" min="1" max="100">
+                         </div>
+                         <button class="btn" onclick="getFollowing()">팔로잉 조회</button>
+                         <div class="response" id="getFollowingResult"></div>
+                     </div>
+
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method get">GET</span>
+                             팔로우 통계
+                         </div>
+                         <div class="input-group">
+                             <label>사용자 ID:</label>
+                             <input type="text" id="getFollowStatsUserId" placeholder="사용자 ID 입력">
+                         </div>
+                         <button class="btn" onclick="getFollowStats()">통계 조회</button>
+                         <div class="response" id="getFollowStatsResult"></div>
+                     </div>
+
+                     <div class="api-card">
+                         <div class="api-title">
+                             <span class="method get">GET</span>
+                             팔로우 상태 확인
+                         </div>
+                         <div class="input-group">
+                             <label>확인할 사용자 ID:</label>
+                             <input type="text" id="checkFollowUserId" placeholder="사용자 ID 입력">
+                         </div>
+                         <button class="btn" onclick="checkFollowStatus()">상태 확인</button>
+                         <div class="response" id="checkFollowStatusResult"></div>
+                     </div>
+                 </div>
+             </div>
+        </div>
+    </div>
+
+    <!-- 랜덤 매칭 시스템 API 섹션 -->
+    <div class="api-section">
+        <div class="section-header">💕 랜덤 매칭 시스템</div>
+        <div class="api-grid">
+            <!-- 프로필 관리 -->
+            <div class="api-card">
+                <div class="api-title">
+                    <span class="method post">POST</span>
+                    프로필 생성
+                </div>
+                <div class="input-group">
+                    <label>키 (cm):</label>
+                    <input type="number" id="profileHeight" placeholder="170">
+                </div>
+                <div class="input-group">
+                    <label>나이:</label>
+                    <input type="number" id="profileAge" placeholder="25">
+                </div>
+                <div class="input-group">
+                    <label>성별:</label>
+                    <select id="profileGender">
+                        <option value="male">남성</option>
+                        <option value="female">여성</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>학과:</label>
+                    <input type="text" id="profileMajor" placeholder="컴퓨터공학과">
+                </div>
+                <div class="input-group">
+                    <label>MBTI:</label>
+                    <input type="text" id="profileMbti" placeholder="INTJ">
+                </div>
+                <div class="input-group">
+                    <label>취미:</label>
+                    <input type="text" id="profileHobbies" placeholder="게임, 독서, 운동">
+                </div>
+                <div class="input-group">
+                    <label>프로필 사진 URL (선택):</label>
+                    <input type="text" id="profilePhotoUrl" placeholder="https://...">
+                </div>
+                <button class="btn" onclick="createProfile()">프로필 생성</button>
+                <div class="response" id="createProfileResult"></div>
+            </div>
+
+            <!-- 매칭 선호도 설정 -->
+            <div class="api-card">
+                <div class="api-title">
+                    <span class="method post">POST</span>
+                    매칭 선호도 설정
+                </div>
+                <div class="input-group">
+                    <label>선호 성별:</label>
+                    <select id="preferredGender">
+                        <option value="male">남성</option>
+                        <option value="female">여성</option>
+                        <option value="all">모두</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>최소 나이:</label>
+                    <input type="number" id="minAge" placeholder="20">
+                </div>
+                <div class="input-group">
+                    <label>최대 나이:</label>
+                    <input type="number" id="maxAge" placeholder="30">
+                </div>
+                <div class="input-group">
+                    <label>매칭 알고리즘:</label>
+                    <select id="matchingAlgorithm">
+                        <option value="random">랜덤</option>
+                        <option value="tempus_based">온도 기반</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="createMatchingPreference()">선호도 설정</button>
+                <div class="response" id="createMatchingPreferenceResult"></div>
+            </div>
+
+            <!-- 랜덤 매칭 실행 -->
+            <div class="api-card">
+                <div class="api-title">
+                    <span class="method post">POST</span>
+                    랜덤 매칭 실행
+                </div>
+                <button class="btn" onclick="executeRandomMatching()">매칭 시작</button>
+                <div class="response" id="randomMatchingResult"></div>
+            </div>
+
+            <!-- 채팅 시스템 -->
+            <div class="api-card">
+                <div class="api-title">
+                    <span class="method post">POST</span>
+                    메시지 전송
+                </div>
+                <div class="input-group">
+                    <label>현재 매칭 ID:</label>
+                    <input type="text" id="currentMatchingId" placeholder="매칭 후 자동 입력됨" readonly>
+                </div>
+                <div class="input-group">
+                    <label>메시지:</label>
+                    <textarea id="messageText" placeholder="메시지를 입력하세요..."></textarea>
+                </div>
+                <button class="btn" onclick="sendMessage()">메시지 전송</button>
+                <div class="response" id="sendMessageResult"></div>
+            </div>
+
+            <!-- 메시지 조회 -->
+            <div class="api-card">
+                <div class="api-title">
+                    <span class="method get">GET</span>
+                    메시지 조회
+                </div>
+                <button class="btn" onclick="getMessages()">메시지 조회</button>
+                <div class="response" id="getMessagesResult"></div>
+            </div>
+
+            <!-- 프로필 공개 정보 -->
+            <div class="api-card">
+                <div class="api-title">
+                    <span class="method get">GET</span>
+                    프로필 공개 정보
+                </div>
+                <button class="btn" onclick="getProfileRevealInfo()">공개 정보 조회</button>
+                <div class="response" id="profileRevealResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let authToken = '';
+        let currentUserId = '';
+        
+        // API 기본 URL
+        const API_BASE = 'http://localhost:3000/api';
+        
+        // 응답 표시 함수
+        function showResponse(elementId, data, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(data, null, 2);
+            element.className = `response ${isSuccess ? 'success' : 'error'}`;
+        }
+        
+        // 인증 정보 업데이트
+        function updateAuthInfo() {
+            document.getElementById('currentToken').textContent = authToken ? '있음' : '없음';
+            document.getElementById('currentUserId').textContent = currentUserId || '없음';
+            
+            const tokenDisplay = document.getElementById('tokenDisplay');
+            if (authToken) {
+                tokenDisplay.textContent = authToken;
+                tokenDisplay.style.display = 'block';
+                console.log('Auth info updated:', { authToken, currentUserId }); // 디버깅용
+            } else {
+                tokenDisplay.style.display = 'none';
+                console.log('Auth info cleared'); // 디버깅용
+            }
+        }
+        
+        // HTTP 요청 헬퍼 함수
+        async function makeRequest(url, options = {}) {
+            try {
+                // body가 객체인 경우 JSON으로 변환
+                if (options.body && typeof options.body === 'object') {
+                    options.body = JSON.stringify(options.body);
+                }
+                
+                // 인증 헤더 디버깅
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+                    ...options.headers
+                };
+                
+                console.log('Request Headers:', headers); // 디버깅용
+                console.log('Auth Token:', authToken); // 디버깅용
+                
+                const response = await fetch(url, {
+                    headers,
+                    ...options
+                });
+                
+                const data = await response.json();
+                console.log(`Request to ${url}:`, { status: response.status, data }); // 디버깅용
+                
+                return { success: response.ok, data, status: response.status };
+            } catch (error) {
+                console.error(`Request error to ${url}:`, error); // 디버깅용
+                return { success: false, data: { error: error.message }, status: 0 };
+            }
+        }
+        
+        // User API 함수들
+        async function register() {
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const nickname = document.getElementById('registerNickname').value;
+            
+            if (!email || !password || !nickname) {
+                showResponse('registerResponse', { error: '모든 필드를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/auth/register`, {
+                method: 'POST',
+                body: JSON.stringify({ email, password, nickname })
+            });
+            
+            // 회원가입 성공 시 자동으로 토큰과 사용자 ID 설정
+            if (result.success && result.data && result.data.data && result.data.data.token) {
+                authToken = result.data.data.token;
+                currentUserId = result.data.data.user.id;
+                updateAuthInfo();
+                console.log('Auto-login after register:', { authToken, currentUserId });
+            }
+            
+            showResponse('registerResponse', result.data, result.success);
+        }
+        
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showResponse('loginResponse', { error: '이메일과 비밀번호를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/auth/login`, {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+            
+            console.log('Login response:', result); // 디버깅용
+            
+            // 응답 구조: result.data.data.token (중첩된 data 구조)
+            if (result.success && result.data && result.data.data && result.data.data.token) {
+                authToken = result.data.data.token;
+                currentUserId = result.data.data.user.id;
+                updateAuthInfo();
+                console.log('Auth updated:', { authToken, currentUserId }); // 디버깅용
+            } else {
+                console.log('Login failed or no token:', result); // 디버깅용
+                console.log('Response structure:', {
+                    hasSuccess: !!result.success,
+                    hasData: !!result.data,
+                    hasNestedData: !!(result.data && result.data.data),
+                    hasToken: !!(result.data && result.data.data && result.data.data.token),
+                    hasUser: !!(result.data && result.data.data && result.data.data.user)
+                });
+            }
+            
+            showResponse('loginResponse', result.data, result.success);
+        }
+        
+        async function checkNickname() {
+            const nickname = document.getElementById('checkNickname').value;
+            
+            if (!nickname) {
+                showResponse('checkNicknameResponse', { error: '닉네임을 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/auth/check-nickname?nickname=${encodeURIComponent(nickname)}`);
+            showResponse('checkNicknameResponse', result.data, result.success);
+        }
+        
+        async function getMyTemperature() {
+            if (!authToken) {
+                showResponse('getMyTemperatureResponse', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/auth/temperature`);
+            showResponse('getMyTemperatureResponse', result.data, result.success);
+        }
+        
+        // Post API 함수들
+        async function createPost() {
+            if (!authToken) {
+                showResponse('createPostResponse', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const title = document.getElementById('postTitle').value;
+            const content = document.getElementById('postContent').value;
+            const temperature_change = parseInt(document.getElementById('postTemperature').value) || 0;
+            
+            if (!title || !content) {
+                showResponse('createPostResponse', { error: '제목과 내용을 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/posts`, {
+                method: 'POST',
+                body: JSON.stringify({ title, content, temperature_change })
+            });
+            
+            showResponse('createPostResponse', result.data, result.success);
+        }
+        
+        async function getAllPosts() {
+            const page = document.getElementById('postPage').value || 1;
+            const limit = document.getElementById('postLimit').value || 10;
+            
+            const result = await makeRequest(`${API_BASE}/posts?page=${page}&limit=${limit}`);
+            showResponse('getAllPostsResponse', result.data, result.success);
+        }
+        
+        async function getPostById() {
+            const id = document.getElementById('getPostId').value;
+            
+            if (!id) {
+                showResponse('getPostByIdResponse', { error: '게시글 ID를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/posts/${id}`);
+            showResponse('getPostByIdResponse', result.data, result.success);
+        }
+        
+        async function updatePost() {
+            if (!authToken) {
+                showResponse('updatePostResponse', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const id = document.getElementById('updatePostId').value;
+            const title = document.getElementById('updatePostTitle').value;
+            const content = document.getElementById('updatePostContent').value;
+            
+            if (!id || !title || !content) {
+                showResponse('updatePostResponse', { error: '모든 필드를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/posts/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ title, content })
+            });
+            
+            showResponse('updatePostResponse', result.data, result.success);
+        }
+        
+        async function deletePost() {
+            if (!authToken) {
+                showResponse('deletePostResponse', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const id = document.getElementById('deletePostId').value;
+            
+            if (!id) {
+                showResponse('deletePostResponse', { error: '게시글 ID를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/posts/${id}`, {
+                method: 'DELETE'
+            });
+            
+            showResponse('deletePostResponse', result.data, result.success);
+        }
+        
+        async function updatePostTemperature() {
+            const id = document.getElementById('updatePostTempId').value;
+            const temperature_change = parseInt(document.getElementById('updatePostTempValue').value) || 0;
+            
+            if (!id) {
+                showResponse('updatePostTemperatureResponse', { error: '게시글 ID를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/posts/${id}/temperature`, {
+                method: 'PATCH',
+                body: JSON.stringify({ temperature_change })
+            });
+            
+            showResponse('updatePostTemperatureResponse', result.data, result.success);
+        }
+        
+                 // Comment API 함수들
+         async function handleCreateComment() {
+             if (!authToken) {
+                 showResponse('createCommentResponse', { error: '로그인이 필요합니다.' }, false);
+                 return;
+             }
+             
+             const postId = document.getElementById('commentPostId').value;
+             const content = document.getElementById('commentContent').value;
+             const temperature_change = parseInt(document.getElementById('commentTemperature').value) || 0;
+             
+             if (!postId || !content) {
+                 showResponse('createCommentResponse', { error: '게시글 ID와 댓글 내용을 입력해주세요.' }, false);
+                 return;
+             }
+             
+             const result = await makeRequest(`${API_BASE}/posts/${postId}/comments`, {
+                 method: 'POST',
+                 body: JSON.stringify({ content, temperature_change })
+             });
+             
+             showResponse('createCommentResponse', result.data, result.success);
+         }
+        
+        async function getCommentsByPost() {
+            const postId = document.getElementById('getCommentsPostId').value;
+            const page = document.getElementById('commentPage').value || 1;
+            const limit = document.getElementById('commentLimit').value || 10;
+            
+            if (!postId) {
+                showResponse('getCommentsByPostResponse', { error: '게시글 ID를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/posts/${postId}/comments?page=${page}&limit=${limit}`);
+            showResponse('getCommentsByPostResponse', result.data, result.success);
+        }
+        
+        async function getCommentById() {
+            const id = document.getElementById('getCommentId').value;
+            
+            if (!id) {
+                showResponse('getCommentByIdResponse', { error: '댓글 ID를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/comments/${id}`);
+            showResponse('getCommentByIdResponse', result.data, result.success);
+        }
+        
+        async function updateComment() {
+            if (!authToken) {
+                showResponse('updateCommentResponse', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const id = document.getElementById('updateCommentId').value;
+            const content = document.getElementById('updateCommentContent').value;
+            
+            if (!id || !content) {
+                showResponse('updateCommentResponse', { error: '댓글 ID와 내용을 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/comments/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ content })
+            });
+            
+            showResponse('updateCommentResponse', result.data, result.success);
+        }
+        
+        async function deleteComment() {
+            if (!authToken) {
+                showResponse('deleteCommentResponse', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const id = document.getElementById('deleteCommentId').value;
+            
+            if (!id) {
+                showResponse('deleteCommentResponse', { error: '댓글 ID를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/comments/${id}`, {
+                method: 'DELETE'
+            });
+            
+            showResponse('deleteCommentResponse', result.data, result.success);
+        }
+        
+        async function updateCommentTemperature() {
+            const id = document.getElementById('updateCommentTempId').value;
+            const temperature_change = parseInt(document.getElementById('updateCommentTempValue').value) || 0;
+            
+            if (!id) {
+                showResponse('updateCommentTemperatureResponse', { error: '댓글 ID를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/comments/${id}/temperature`, {
+                method: 'PATCH',
+                body: JSON.stringify({ temperature_change })
+            });
+            
+            showResponse('updateCommentTemperatureResponse', result.data, result.success);
+        }
+        
+        // 마이룸 API 함수들
+        async function createMyRoom() {
+            if (!authToken) {
+                showResponse('createMyRoomResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const profile_image = document.getElementById('myroomProfileImage').value;
+            const bio = document.getElementById('myroomBio').value;
+            
+            const result = await makeRequest(`${API_BASE}/myroom`, {
+                method: 'POST',
+                body: JSON.stringify({ profile_image, bio })
+            });
+            
+            showResponse('createMyRoomResult', result.data, result.success);
+        }
+
+        async function getMyRoom() {
+            if (!authToken) {
+                showResponse('getMyRoomResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/myroom`);
+            showResponse('getMyRoomResult', result.data, result.success);
+        }
+
+        async function updateTemperature() {
+            if (!authToken) {
+                showResponse('updateTemperatureResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const temperature_change = parseFloat(document.getElementById('temperatureChange').value) || 0;
+            
+            const result = await makeRequest(`${API_BASE}/myroom/temperature`, {
+                method: 'PATCH',
+                body: JSON.stringify({ temperature_change })
+            });
+            
+            showResponse('updateTemperatureResult', result.data, result.success);
+        }
+
+        async function addItem() {
+            if (!authToken) {
+                showResponse('addItemResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const name = document.getElementById('itemName').value;
+            const description = document.getElementById('itemDescription').value;
+            const item_type = document.getElementById('itemType').value;
+            const rarity = document.getElementById('itemRarity').value;
+            
+            if (!name || !item_type || !rarity) {
+                showResponse('addItemResult', { error: '아이템 이름, 타입, 희귀도를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/myroom/items`, {
+                method: 'POST',
+                body: JSON.stringify({ name, description, item_type, rarity })
+            });
+            
+            showResponse('addItemResult', result.data, result.success);
+        }
+
+        async function getItems() {
+            if (!authToken) {
+                showResponse('getItemsResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/myroom/items`);
+            showResponse('getItemsResult', result.data, result.success);
+        }
+
+        // 팔로우 API 함수들
+        async function followUser() {
+            if (!authToken) {
+                showResponse('followUserResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const following_id = document.getElementById('followUserId').value;
+            
+            if (!following_id) {
+                showResponse('followUserResult', { error: '팔로우할 사용자 ID를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/follow`, {
+                method: 'POST',
+                body: JSON.stringify({ following_id })
+            });
+            
+            showResponse('followUserResult', result.data, result.success);
+        }
+
+        async function unfollowUser() {
+            if (!authToken) {
+                showResponse('unfollowUserResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const followingId = document.getElementById('unfollowUserId').value;
+            
+            if (!followingId) {
+                showResponse('unfollowUserResult', { error: '언팔로우할 사용자 ID를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/follow/${followingId}`, {
+                method: 'DELETE'
+            });
+            
+            showResponse('unfollowUserResult', result.data, result.success);
+        }
+
+        async function getFollowers() {
+            const userId = document.getElementById('getFollowersUserId').value;
+            const page = document.getElementById('getFollowersPage').value || 1;
+            const limit = document.getElementById('getFollowersLimit').value || 10;
+            
+            if (!userId) {
+                showResponse('getFollowersResult', { error: '사용자 ID를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/follow/followers/${userId}?page=${page}&limit=${limit}`);
+            showResponse('getFollowersResult', result.data, result.success);
+        }
+
+        async function getFollowing() {
+            const userId = document.getElementById('getFollowingUserId').value;
+            const page = document.getElementById('getFollowingPage').value || 1;
+            const limit = document.getElementById('getFollowingLimit').value || 10;
+            
+            if (!userId) {
+                showResponse('getFollowingResult', { error: '사용자 ID를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/follow/following/${userId}?page=${page}&limit=${limit}`);
+            showResponse('getFollowingResult', result.data, result.success);
+        }
+
+        async function getFollowStats() {
+            const userId = document.getElementById('getFollowStatsUserId').value;
+            
+            if (!userId) {
+                showResponse('getFollowStatsResult', { error: '사용자 ID를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/follow/stats/${userId}`);
+            showResponse('getFollowStatsResult', result.data, result.success);
+        }
+
+        async function checkFollowStatus() {
+            if (!authToken) {
+                showResponse('checkFollowStatusResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const followingId = document.getElementById('checkFollowUserId').value;
+            
+            if (!followingId) {
+                showResponse('checkFollowStatusResult', { error: '확인할 사용자 ID를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/follow/check/${followingId}`);
+            showResponse('checkFollowStatusResult', result.data, result.success);
+        }
+
+        // 랜덤 매칭 시스템 API 함수들
+        async function createProfile() {
+            if (!authToken) {
+                showResponse('createProfileResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const profileData = {
+                height: parseInt(document.getElementById('profileHeight').value),
+                age: parseInt(document.getElementById('profileAge').value),
+                gender: document.getElementById('profileGender').value,
+                major: document.getElementById('profileMajor').value,
+                mbti: document.getElementById('profileMbti').value,
+                hobbies: document.getElementById('profileHobbies').value,
+                profilePhotoUrl: document.getElementById('profilePhotoUrl').value || undefined
+            };
+            
+            if (!profileData.height || !profileData.age || !profileData.gender || 
+                !profileData.major || !profileData.mbti || !profileData.hobbies) {
+                showResponse('createProfileResult', { error: '필수 정보를 모두 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/profile`, {
+                method: 'POST',
+                body: profileData  // 이제 객체를 직접 전달해도 됩니다
+            });
+            
+            showResponse('createProfileResult', result.data, result.success);
+        }
+
+        async function getProfile() {
+            if (!authToken) {
+                showResponse('getProfileResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/profile`);
+            showResponse('getProfileResult', result.data, result.success);
+        }
+
+        async function createMatchingPreference() {
+            if (!authToken) {
+                showResponse('createMatchingPreferenceResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const preferenceData = {
+                preferredGender: document.getElementById('preferredGender').value,
+                minAge: parseInt(document.getElementById('minAge').value) || undefined,
+                maxAge: parseInt(document.getElementById('maxAge').value) || undefined,
+                matchingAlgorithm: document.getElementById('matchingAlgorithm').value
+            };
+            
+            if (!preferenceData.preferredGender || !preferenceData.matchingAlgorithm) {
+                showResponse('createMatchingPreferenceResult', { error: '필수 정보를 모두 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/matching/preference`, {
+                method: 'POST',
+                body: preferenceData  // 이제 객체를 직접 전달해도 됩니다
+            });
+            
+            showResponse('createMatchingPreferenceResult', result.data, result.success);
+        }
+
+        async function executeRandomMatching() {
+            if (!authToken) {
+                showResponse('randomMatchingResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/matching/random`, {
+                method: 'POST'
+            });
+            
+            showResponse('randomMatchingResult', result.data, result.success);
+            
+            // 매칭 성공 시 매칭 ID 저장
+            if (result.success && result.data.matching) {
+                window.currentMatchingId = result.data.matching.id;
+                document.getElementById('currentMatchingId').value = result.data.matching.id;
+            }
+        }
+
+        async function sendMessage() {
+            if (!authToken) {
+                showResponse('sendMessageResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const matchingId = document.getElementById('currentMatchingId').value;
+            if (!matchingId) {
+                showResponse('sendMessageResult', { error: '매칭 ID가 필요합니다. 먼저 매칭을 진행해주세요.' }, false);
+                return;
+            }
+            
+            const messageData = {
+                message: document.getElementById('messageText').value,
+                messageType: 'text'
+            };
+            
+            if (!messageData.message) {
+                showResponse('sendMessageResult', { error: '메시지를 입력해주세요.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/chat/${matchingId}/messages`, {
+                method: 'POST',
+                body: messageData
+            });
+            
+            showResponse('sendMessageResult', result.data, result.success);
+            
+            if (result.success) {
+                document.getElementById('messageText').value = '';
+                // 메시지 전송 후 채팅방 메시지 조회
+                getMessages();
+            }
+        }
+
+        async function getMessages() {
+            if (!authToken) {
+                showResponse('getMessagesResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const matchingId = document.getElementById('currentMatchingId').value;
+            if (!matchingId) {
+                showResponse('getMessagesResult', { error: '매칭 ID가 필요합니다.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/chat/${matchingId}/messages`);
+            showResponse('getMessagesResult', result.data, result.success);
+        }
+
+        async function getProfileRevealInfo() {
+            if (!authToken) {
+                showResponse('profileRevealResult', { error: '로그인이 필요합니다.' }, false);
+                return;
+            }
+            
+            const matchingId = document.getElementById('currentMatchingId').value;
+            if (!matchingId) {
+                showResponse('profileRevealResult', { error: '매칭 ID가 필요합니다.' }, false);
+                return;
+            }
+            
+            const result = await makeRequest(`${API_BASE}/chat/${matchingId}/profile-reveal`);
+            showResponse('profileRevealResult', result.data, result.success);
+        }
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            updateAuthInfo();
+            
+            // 샘플 데이터 미리 입력
+            document.getElementById('registerEmail').value = 'test@example.com';
+            document.getElementById('registerPassword').value = 'password123';
+            document.getElementById('registerNickname').value = '테스트유저';
+            
+            document.getElementById('loginEmail').value = 'test@example.com';
+            document.getElementById('loginPassword').value = 'password123';
+            
+            document.getElementById('postTitle').value = '테스트 게시글';
+            document.getElementById('postContent').value = '이것은 테스트 게시글입니다.';
+            
+            document.getElementById('commentContent').value = '테스트 댓글입니다.';
+            
+            // 마이룸/팔로우 샘플 데이터
+            document.getElementById('myroomBio').value = '안녕하세요! 저는 테스트 유저입니다.';
+            document.getElementById('itemName').value = '테스트 아이템';
+            document.getElementById('itemDescription').value = '이것은 테스트 아이템입니다.';
+            
+            // 랜덤 매칭 시스템 샘플 데이터
+            document.getElementById('profileHeight').value = '170';
+            document.getElementById('profileAge').value = '25';
+            document.getElementById('profileGender').value = 'male';
+            document.getElementById('profileMajor').value = '컴퓨터공학과';
+            document.getElementById('profileMbti').value = 'INTJ';
+            document.getElementById('profileHobbies').value = '게임, 독서, 운동';
+            
+            // 디버깅용: 함수 존재 여부 확인
+            console.log('Functions loaded:', {
+                handleCreateComment: typeof handleCreateComment,
+                getAllPosts: typeof getAllPosts,
+                makeRequest: typeof makeRequest,
+                createMyRoom: typeof createMyRoom,
+                followUser: typeof followUser,
+                createProfile: typeof createProfile,
+                executeRandomMatching: typeof executeRandomMatching,
+                sendMessage: typeof sendMessage
+            });
+        });
+    </script>
+</body>
+</html>

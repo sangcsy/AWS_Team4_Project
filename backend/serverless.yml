@@ -1,0 +1,59 @@
+service: kusj-pj-4-lambda
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  environment:
+    DB_HOST: ${env:DB_HOST}
+    DB_USER: ${env:DB_USER}
+    DB_PASSWORD: ${env:DB_PASSWORD}
+    DB_NAME: ${env:DB_NAME}
+    DB_PORT: ${env:DB_PORT}
+    JWT_SECRET: ${env:JWT_SECRET}
+    JWT_EXPIRES_IN: ${env:JWT_EXPIRES_IN, '7d'}
+    S3_BUCKET_NAME: ${env:S3_BUCKET_NAME}
+    NODE_ENV: ${env:NODE_ENV, 'production'}
+  iam:
+    role: SafeRoleForUser-kusj-4
+  vpc:
+    securityGroupIds:
+      - sg-xxxxxxxxx  # RDS 보안 그룹 ID 필요
+    subnetIds:
+      - subnet-xxxxxxxxx  # 프라이빗 서브넷 ID 필요
+
+functions:
+  # Express 앱 서비스
+  api-service:
+    handler: src/main.handler
+    events:
+      - httpApi:
+          path: /{proxy+}
+          method: ANY
+    environment:
+      FUNCTION_NAME: api-service
+
+plugins:
+  - serverless-webpack
+  - serverless-offline
+
+custom:
+  webpack:
+    webpackConfig: webpack.config.js
+    includeModules: true
+    packager: 'npm'
+  serverless-offline:
+    httpPort: 3000
+    lambdaPort: 3002
+    useChildProcesses: true
+    allowCache: true
+    # Express 앱을 직접 실행하도록 설정
+    noPrependStageInUrl: true
+    # Lambda 함수 대신 Express 앱 사용
+    useDocker: false
+
+# dotenv 설정
+useDotenv: true

@@ -1,9 +1,12 @@
-import { User } from './User';
+import { User, CreateUserRequest, UpdateUserRequest } from './User';
 
 export interface UserRepository {
+  create(userData: CreateUserRequest): Promise<User>;
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
   findByNickname(nickname: string): Promise<User | null>;
-  save(user: User): Promise<void>;
-  existsByNickname(nickname: string): Promise<boolean>;
+  searchByNickname(searchQuery: string): Promise<User[]>; // 사용자 검색 메서드 추가
+  update(id: string, updates: UpdateUserRequest): Promise<User>;
+  delete(id: string): Promise<void>;
+  updateTemperature(id: string, temperatureChange: number): Promise<User>;
 }

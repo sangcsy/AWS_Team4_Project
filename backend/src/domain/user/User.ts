@@ -1,26 +1,33 @@
-export interface UserProps {
+export interface User {
   id: string;
   email: string;
-  passwordHash: string;
+  password_hash: string;
   nickname: string;
   temperature: number;
-  createdAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
-export class User {
+export interface CreateUserRequest {
+  email: string;
+  password: string;
+  nickname: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface UserResponse {
   id: string;
   email: string;
-  passwordHash: string;
   nickname: string;
   temperature: number;
-  createdAt: Date;
+  created_at: Date;
+}
 
-  constructor(props: UserProps) {
-    this.id = props.id;
-    this.email = props.email;
-    this.passwordHash = props.passwordHash;
-    this.nickname = props.nickname;
-    this.temperature = props.temperature;
-    this.createdAt = props.createdAt;
-  }
+export interface UpdateUserRequest {
+  nickname?: string;
+  temperature?: number;
 }

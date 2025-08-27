@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { ReviewController } from '../controllers/ReviewController';
-import { authenticateJWT } from '../middlewares/authMiddleware';
 
-export function createReviewRoutes(reviewController: ReviewController) {
-  const router = Router();
-  router.post('/market/:itemId/review', authenticateJWT, reviewController.create);
-  router.get('/market/:itemId/review', authenticateJWT, reviewController.list);
-  return router;
-}
+const router = Router();
+
+// 임시 라우트 (나중에 구현)
+router.get('/', (req, res) => {
+  res.json({ message: 'Review route - Coming soon' });
+});
+
+export default router;

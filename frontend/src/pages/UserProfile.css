@@ -1,0 +1,300 @@
+/* UserProfile 컴포넌트 스타일 */
+
+/* 좋아요한 게시글 스타일 */
+.liked-post-item {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 2px solid #f59e0b;
+  border-radius: 8px;
+  background: #fef3c7;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+}
+
+/* 좋아요한 게시글 제목 강조 */
+.liked-post-item .post-title {
+  color: #92400e;
+}
+
+/* 좋아요한 게시글 좋아요 아이콘 강조 */
+.liked-post-item .post-likes {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* 좋아요한 게시글 배지 표시 */
+.liked-post-item::before {
+  content: "❤️ 좋아요";
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  background: #dc2626;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  z-index: 1;
+}
+
+/* 좋아요한 게시글 상대적 위치 설정 */
+.liked-post-item {
+  position: relative;
+}
+
+/* 프로필 통계 개선 */
+.profile-stats .stat-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
+.profile-stats .stat-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* 탭 네비게이션 개선 */
+.profile-tabs .tab {
+  color: #374151;
+  font-weight: 600;
+}
+
+.profile-tabs .tab.active {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.post-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.post-time {
+  font-size: 0.8rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.post-content {
+  margin-bottom: 1rem;
+  color: #1e293b;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.post-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+/* 정렬 버튼 스타일 */
+.sort-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.sort-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #374151;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sort-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.sort-btn.active {
+  background: #1d4ed8;
+  color: #ffffff;
+  border-color: #1d4ed8;
+}
+
+/* 팔로잉/팔로워 사용자 공통 스타일 */
+.following-user-item,
+.follower-user-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.avatar-small {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #007bff;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-nickname {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.user-temperature {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.visit-profile-btn {
+  padding: 0.5rem 1rem;
+  background: #1d4ed8;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.visit-profile-btn:hover {
+  background: #1e40af;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(29, 78, 216, 0.3);
+}
+
+/* 탭 콘텐츠 스타일 */
+.likes-tab,
+.following-tab {
+  padding: 1rem 0;
+}
+
+.liked-posts-list,
+.following-users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* 팔로우 버튼 스타일 */
+.follow-btn {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #1d4ed8;
+  border-radius: 8px;
+  background: #1d4ed8;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+}
+
+.follow-btn:hover {
+  background: #1e40af;
+  border-color: #1e40af;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+}
+
+.follow-btn.following {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.follow-btn.following:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* 좋아요 버튼 스타일 */
+.like-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid transparent;
+}
+
+.like-btn:hover {
+  background: #f8f9fa;
+  transform: scale(1.05);
+  border-color: #d1d5db;
+}
+
+.like-btn.liked {
+  color: #dc2626;
+  font-weight: 700;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.like-btn.liked:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  transform: scale(1.05);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .following-user-item {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  .avatar-small {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+  }
+  
+  .visit-profile-btn {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+  
+  .follow-btn {
+    width: 100%;
+    margin-top: 1rem;
+  }
+}
