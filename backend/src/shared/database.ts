@@ -112,6 +112,7 @@ export class DatabaseConnection {
           user_id VARCHAR(36) NOT NULL,
           title VARCHAR(255) NOT NULL,
           content TEXT NOT NULL,
+          image_url VARCHAR(500),
           temperature_change DECIMAL(3,1) DEFAULT 0.0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

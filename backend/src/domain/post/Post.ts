@@ -4,6 +4,7 @@ export interface Post {
   title: string;
   content: string;
   category?: string;
+  image_url?: string;
   temperature_change: number;
   created_at: Date;
   updated_at: Date;
@@ -21,6 +22,7 @@ export interface CreatePostRequest {
   title: string;
   content: string;
   category?: string;
+  image_url?: string;
   temperature_change?: number;
 }
 
@@ -37,6 +39,7 @@ export interface PostResponse {
   title: string;
   content: string;
   category?: string;
+  image_url?: string;
   temperature_change: number;
   created_at: Date;
   updated_at: Date;

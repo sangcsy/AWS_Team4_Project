@@ -140,43 +140,23 @@ export class PostService {
     
     // 좋아요를 눌렀다면 알림 생성 (자신의 게시글에는 알림 생성하지 않음)
     if (result.liked && existingPost.user_id !== userId) {
-      console.log('🔔 좋아요 알림 생성 시작:', {
-        postId,
-        postOwnerId: existingPost.user_id,
-        likerId: userId,
-        isOwnPost: existingPost.user_id === userId
-      });
-      
       try {
         // 사용자 정보 조회 (닉네임 가져오기)
         const userRepository = new (await import('../../functions/auth/UserRepositoryImpl')).UserRepositoryImpl();
         const liker = await userRepository.findById(userId);
         
-        console.log('🔔 좋아요 사용자 정보 조회 결과:', liker);
-        
         if (liker) {
-          console.log('🔔 좋아요 알림 생성 중...');
           await this.notificationService.createLikeNotification(
             postId,
             existingPost.user_id,
             userId,
             liker.nickname
           );
-          console.log('✅ 좋아요 알림 생성 완료');
-        } else {
-          console.log('⚠️ 좋아요 사용자 정보를 찾을 수 없음');
         }
       } catch (error) {
-        console.error('❌ 좋아요 알림 생성 실패:', error);
+        console.error('좋아요 알림 생성 실패:', error);
         // 알림 생성 실패는 좋아요 기능에 영향을 주지 않음
       }
-    } else {
-      console.log('🔔 좋아요 알림 생성 조건 불충족:', {
-        resultLiked: result.liked,
-        isOwnPost: existingPost.user_id === userId,
-        postOwnerId: existingPost.user_id,
-        likerId: userId
-      });
     }
     
     return result;
@@ -207,6 +187,7 @@ export class PostService {
       title: post.title,
       content: post.content,
       category: post.category || '자유', // 카테고리 필드 추가
+      image_url: post.image_url || undefined, // 이미지 URL 추가
       temperature_change: post.temperature_change,
       created_at: post.created_at,
       updated_at: post.updated_at,

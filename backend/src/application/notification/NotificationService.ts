@@ -10,29 +10,16 @@ export class NotificationService {
   }
 
   async createLikeNotification(postId: string, postOwnerId: string, likerId: string, likerNickname: string): Promise<void> {
-    console.log('🔔 NotificationService.createLikeNotification 호출:', {
-      postId,
-      postOwnerId,
-      likerId,
-      likerNickname
-    });
-    
     // 자신의 게시글에는 알림 생성하지 않음
-    if (postOwnerId === likerId) {
-      console.log('⚠️ 자신의 게시글에는 알림 생성하지 않음');
-      return;
-    }
+    if (postOwnerId === likerId) return;
 
-    console.log('🔔 알림 데이터베이스에 저장 중...');
-    const notification = await this.notificationRepository.create({
+    await this.notificationRepository.create({
       user_id: postOwnerId,
       sender_id: likerId,
       post_id: postId,
       type: NotificationType.LIKE,
       content: `${likerNickname}님이 회원님의 게시글을 좋아합니다.`
     });
-    
-    console.log('✅ 좋아요 알림 생성 완료:', notification);
   }
 
   async createCommentNotification(postId: string, postOwnerId: string, commenterId: string, commenterNickname: string): Promise<void> {
@@ -49,27 +36,15 @@ export class NotificationService {
   }
 
   async createFollowNotification(followedUserId: string, followerId: string, followerNickname: string): Promise<void> {
-    console.log('🔔 NotificationService.createFollowNotification 호출:', {
-      followedUserId,
-      followerId,
-      followerNickname
-    });
-    
     // 자신을 팔로우하는 경우 알림 생성하지 않음
-    if (followedUserId === followerId) {
-      console.log('⚠️ 자신을 팔로우하는 경우 알림 생성하지 않음');
-      return;
-    }
+    if (followedUserId === followerId) return;
 
-    console.log('🔔 팔로우 알림 데이터베이스에 저장 중...');
-    const notification = await this.notificationRepository.create({
+    await this.notificationRepository.create({
       user_id: followedUserId,
       sender_id: followerId,
       type: NotificationType.FOLLOW,
       content: `${followerNickname}님이 회원님을 팔로우합니다.`
     });
-    
-    console.log('✅ 팔로우 알림 생성 완료:', notification);
   }
 
   async getUserNotifications(userId: string, page = 1, limit = 20): Promise<NotificationListResponse> {

@@ -11,10 +11,10 @@ export class PostController {
 
   createPost = async (req, res) => {
     try {
-      const { title, content, category, temperature_change } = req.body;
+      const { title, content, category, image_url, temperature_change } = req.body;
       const userId = req.user?.userId;
 
-      console.log('📝 PostController.createPost - 요청 데이터:', { title, content, category, temperature_change, userId });
+      console.log('📝 PostController.createPost - 요청 데이터:', { title, content, category, image_url, temperature_change, userId });
 
       if (!userId) {
         return res.status(401).json({
@@ -23,7 +23,7 @@ export class PostController {
         });
       }
 
-      const post = await this.postService.createPost({ title, content, category, temperature_change }, userId);
+      const post = await this.postService.createPost({ title, content, category, image_url, temperature_change }, userId);
 
       res.status(201).json({
         success: true,

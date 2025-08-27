@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { databaseConnection } from '../../shared/database';
-import { Post, PostRepository, PostCreateData, PostUpdateData } from '../../../domain/post/Post';
+import { Post, CreatePostRequest, UpdatePostRequest } from '../../domain/post/Post';
+import { PostRepository } from '../../domain/post/PostRepository';
 
 export class PostRepositoryImpl implements PostRepository {
   constructor() {
@@ -50,6 +51,26 @@ export class PostRepositoryImpl implements PostRepository {
       } else {
         console.log('✅ category 컬럼이 이미 존재합니다');
       }
+
+      // posts 테이블에 image_url 컬럼이 있는지 확인
+      const [imageUrlColumns] = await pool.execute(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = 'tempus_db' 
+        AND TABLE_NAME = 'posts' 
+        AND COLUMN_NAME = 'image_url'
+      `);
+      
+      // image_url 컬럼이 없다면 추가
+      if (imageUrlColumns.length === 0) {
+        await pool.execute(`
+          ALTER TABLE posts 
+          ADD COLUMN image_url VARCHAR(500) AFTER content
+        `);
+        console.log('✅ image_url 컬럼 추가 완료');
+      } else {
+        console.log('✅ image_url 컬럼이 이미 존재합니다');
+      }
       
       console.log('✅ Posts 테이블 초기화 완료');
     } catch (error) {
@@ -57,14 +78,14 @@ export class PostRepositoryImpl implements PostRepository {
     }
   }
 
-  async create(postData: PostCreateData, userId: string): Promise<Post> {
+  async create(postData: CreatePostRequest, userId: string): Promise<Post> {
     const pool = await databaseConnection.getPool();
     const id = uuidv4();
     const now = new Date();
     
     const [result] = await pool.execute(
-      'INSERT INTO posts (id, user_id, title, content, category, temperature_change, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [id, userId, postData.title, postData.content, postData.category || '자유', postData.temperature_change || 0.0, now, now]
+      'INSERT INTO posts (id, user_id, title, content, category, image_url, temperature_change, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, userId, postData.title, postData.content, postData.category || '자유', postData.image_url || null, postData.temperature_change || 0.0, now, now]
     );
 
     return {
@@ -73,6 +94,7 @@ export class PostRepositoryImpl implements PostRepository {
       title: postData.title,
       content: postData.content,
       category: postData.category || '자유',
+      image_url: postData.image_url,
       temperature_change: postData.temperature_change || 0.0,
       created_at: now,
       updated_at: now
@@ -91,16 +113,17 @@ export class PostRepositoryImpl implements PostRepository {
     }
 
     const row = rows[0];
-    return {
-      id: row.id,
-      user_id: row.user_id,
-      title: row.title,
-      content: row.content,
-      category: row.category || '자유',
-      temperature_change: parseFloat(row.temperature_change),
-      created_at: new Date(row.created_at),
-      updated_at: new Date(row.updated_at)
-    };
+         return {
+       id: row.id,
+       user_id: row.user_id,
+       title: row.title,
+       content: row.content,
+       category: row.category || '자유',
+       image_url: row.image_url || undefined,
+       temperature_change: parseFloat(row.temperature_change),
+       created_at: new Date(row.created_at),
+       updated_at: new Date(row.updated_at)
+     };
   }
 
   async findByUserId(userId: string, page = 1, limit = 10): Promise<{ posts: Post[], total: number }> {
@@ -120,16 +143,17 @@ export class PostRepositoryImpl implements PostRepository {
       [userId, offset, limit]
     );
 
-    const posts = rows.map(row => ({
-      id: row.id,
-      user_id: row.user_id,
-      title: row.title,
-      content: row.content,
-      category: row.category || '자유',
-      temperature_change: parseFloat(row.temperature_change),
-      created_at: new Date(row.created_at),
-      updated_at: new Date(row.updated_at)
-    }));
+         const posts = rows.map(row => ({
+       id: row.id,
+       user_id: row.user_id,
+       title: row.title,
+       content: row.content,
+       category: row.category || '자유',
+       image_url: row.image_url || undefined,
+       temperature_change: parseFloat(row.temperature_change),
+       created_at: new Date(row.created_at),
+       updated_at: new Date(row.updated_at)
+     }));
 
     return { posts, total };
   }
@@ -193,33 +217,34 @@ export class PostRepositoryImpl implements PostRepository {
         isLiked = likeStatusResult[0]?.count > 0;
       }
 
-      return {
-        id: row.id,
-        user_id: row.user_id,
-        title: row.title,
-        content: row.content,
-        category: row.category || '자유', // 카테고리 필드 추가
-        temperature_change: parseFloat(row.temperature_change),
-        created_at: new Date(row.created_at),
-        updated_at: new Date(row.updated_at),
-        user: {
-          nickname: row.nickname || '알 수 없음',
-          temperature: row.temperature || 36.5,
-          email: row.email || ''
-        },
-        likes: likesResult[0]?.likes || 0,
-        isLiked: isLiked,
-        comments: commentRows.map((comment: any) => ({
-          id: comment.id,
-          post_id: comment.post_id,
-          user_id: comment.user_id,
-          content: comment.content,
-          created_at: comment.created_at,
-          user: {
-            nickname: comment.nickname || '알 수 없음'
-          }
-        }))
-      };
+             return {
+         id: row.id,
+         user_id: row.user_id,
+         title: row.title,
+         content: row.content,
+         category: row.category || '자유',
+         image_url: row.image_url || undefined,
+         temperature_change: parseFloat(row.temperature_change),
+         created_at: new Date(row.created_at),
+         updated_at: new Date(row.updated_at),
+         user: {
+           nickname: row.nickname || '알 수 없음',
+           temperature: row.temperature || 36.5,
+           email: row.email || ''
+         },
+         likes: likesResult[0]?.likes || 0,
+         isLiked: isLiked,
+         comments: commentRows.map((comment: any) => ({
+           id: comment.id,
+           post_id: comment.post_id,
+           user_id: comment.user_id,
+           content: comment.content,
+           created_at: comment.created_at,
+           user: {
+             nickname: comment.nickname || '알 수 없음'
+           }
+         }))
+       };
     }));
 
     return { posts, total };

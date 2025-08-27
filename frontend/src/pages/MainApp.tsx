@@ -10,6 +10,7 @@ type Post = {
   user_id: string
   title: string
   content: string
+  image_url?: string
   temperature_change: number
   created_at: string
   updated_at: string
@@ -94,9 +95,22 @@ export default function MainApp() {
   // 정렬 상태
   const [sortBy, setSortBy] = useState<'latest' | 'popular' | 'temperature'>('latest')
   
-  // 해시태그 관련 상태
-  const [hashtags, setHashtags] = useState<string[]>([])
-  const [trendingHashtags, setTrendingHashtags] = useState<string[]>([])
+  // 사진 업로드 관련 상태
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [isImageUploading, setIsImageUploading] = useState(false)
+  
+  // 랜덤채팅 관련 상태
+  const [isChatting, setIsChatting] = useState(false)
+  const [chatMessages, setChatMessages] = useState<Array<{
+    id: string
+    text: string
+    isOwn: boolean
+    time: string
+  }>>([])
+  const [chatInput, setChatInput] = useState('')
+  const [onlineUsersCount, setOnlineUsersCount] = useState(0)
+  const chatMessagesRef = React.useRef<HTMLDivElement>(null)
   
   // 팔로잉 관련 상태
   const [followingList, setFollowingList] = useState<string[]>([]) // 내가 팔로우하는 사용자 ID 목록
@@ -262,12 +276,150 @@ export default function MainApp() {
     }))
   }
 
-  // 게시글 로드 후 트렌딩 해시태그 업데이트
-  useEffect(() => {
-    if (posts.length > 0) {
-      updateTrendingHashtags()
+  // 사진 업로드 관련 함수들
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // 파일 타입 검증
+      if (!file.type.startsWith('image/')) {
+        alert('이미지 파일만 업로드 가능합니다.')
+        return
+      }
+      
+      // 파일 크기 제한 (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('파일 크기는 5MB 이하여야 합니다.')
+        return
+      }
+      
+      setSelectedImage(file)
+      
+      // 이미지 미리보기 생성
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
     }
-  }, [posts])
+  }
+
+  const removeImage = () => {
+    setSelectedImage(null)
+    setImagePreview(null)
+  }
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      setIsImageUploading(true)
+      
+      const formData = new FormData()
+      formData.append('image', file)
+      
+      const token = localStorage.getItem('token')
+      const response = await fetch('http://localhost:3000/api/upload/image', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          console.log('✅ 이미지 업로드 성공:', data.data.imageUrl)
+          return data.data.imageUrl
+        }
+      }
+      
+      console.error('❌ 이미지 업로드 실패')
+      return null
+    } catch (error) {
+      console.error('이미지 업로드 에러:', error)
+      return null
+    } finally {
+      setIsImageUploading(false)
+    }
+  }
+
+  // 랜덤채팅 관련 함수들
+  const startRandomChat = () => {
+    setIsChatting(true)
+    setChatMessages([])
+    setChatInput('')
+    
+    // 온라인 사용자 수 시뮬레이션 (실제로는 WebSocket으로 관리)
+    setOnlineUsersCount(Math.floor(Math.random() * 50) + 10)
+    
+    // 환영 메시지 추가
+    const welcomeMessage = {
+      id: Date.now().toString(),
+      text: '랜덤채팅이 시작되었습니다! 새로운 친구를 만나보세요.',
+      isOwn: false,
+      time: new Date().toLocaleTimeString('ko-KR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      })
+    }
+    setChatMessages([welcomeMessage])
+  }
+
+  const endRandomChat = () => {
+    setIsChatting(false)
+    setChatMessages([])
+    setChatInput('')
+    setOnlineUsersCount(0)
+  }
+
+  const sendChatMessage = () => {
+    if (!chatInput.trim()) return
+
+    const newMessage = {
+      id: Date.now().toString(),
+      text: chatInput,
+      isOwn: true,
+      time: new Date().toLocaleTimeString('ko-KR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      })
+    }
+
+    setChatMessages(prev => [...prev, newMessage])
+    setChatInput('')
+
+    // 상대방 응답 시뮬레이션 (실제로는 WebSocket으로 처리)
+    setTimeout(() => {
+      const responses = [
+        '안녕하세요! 반갑습니다 😊',
+        '어떤 과목을 공부하고 계신가요?',
+        '저도 비슷한 관심사가 있어요!',
+        '오늘 날씨가 정말 좋네요',
+        '무슨 취미가 있으신가요?'
+      ]
+      
+      const randomResponse = responses[Math.floor(Math.random() * responses.length)]
+      const responseMessage = {
+        id: (Date.now() + 1).toString(),
+        text: randomResponse,
+        isOwn: false,
+        time: new Date().toLocaleTimeString('ko-KR', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })
+      }
+      
+      setChatMessages(prev => [...prev, responseMessage])
+    }, 1000 + Math.random() * 2000) // 1-3초 후 응답
+
+    // 채팅 메시지 스크롤을 맨 아래로
+    setTimeout(() => {
+      if (chatMessagesRef.current) {
+        chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight
+      }
+    }, 100)
+  }
+
+
 
   // 홈피드 데이터 로드 (팔로우한 사람 + 인기 게시물, 내 게시물 제외)
   const loadHomeFeed = async () => {
@@ -480,10 +632,28 @@ export default function MainApp() {
     
     try {
       const token = localStorage.getItem('token')
+      
+      // 사진 업로드 처리 (게시글 작성 전에 먼저 실행)
+      let imageUrl = null
+      if (selectedImage) {
+        console.log('📸 이미지 업로드 시작:', selectedImage.name)
+        const uploadedUrl = await uploadImage(selectedImage)
+        console.log('📸 이미지 업로드 결과:', uploadedUrl)
+        
+        // 백엔드 서버의 전체 URL로 변환
+        if (uploadedUrl) {
+          imageUrl = `http://localhost:3000${uploadedUrl}`
+          console.log('📸 변환된 이미지 URL:', imageUrl)
+        }
+      } else {
+        console.log('📸 선택된 이미지 없음')
+      }
+      
       const postData = {
         title: title,
         content: text,
         category: selectedCategory,
+        image_url: imageUrl,
         temperature_change: 0
       }
       
@@ -528,11 +698,8 @@ export default function MainApp() {
         setDraftText('')
         setDraftTitle('')
         setDraftCat(CATEGORIES[0]) // 카테고리를 기본값으로 초기화
-        
-        // 해시태그 추출 및 트렌딩 업데이트
-        const newHashtags = extractHashtags(text)
-        setHashtags(newHashtags)
-        updateTrendingHashtags()
+        setSelectedImage(null)
+        setImagePreview(null)
       } else {
         console.log('❌ 게시글 작성 실패:', data.error)
       }
@@ -975,40 +1142,9 @@ export default function MainApp() {
     setFilteredPosts(sortedPosts)
   }
 
-  // 해시태그 추출 함수
-  const extractHashtags = (text: string): string[] => {
-    const hashtagRegex = /#[\w가-힣]+/g
-    return text.match(hashtagRegex) || []
-  }
 
-  // 해시태그 클릭 시 검색
-  const handleHashtagClick = (hashtag: string) => {
-    setSearchQuery(hashtag)
-    handleSearch()
-  }
 
-  // 트렌딩 해시태그 업데이트
-  const updateTrendingHashtags = () => {
-    const allHashtags: string[] = []
-    posts.forEach(post => {
-      const postHashtags = extractHashtags(post.content)
-      allHashtags.push(...postHashtags)
-    })
-    
-    // 해시태그 빈도 계산
-    const hashtagCount: { [key: string]: number } = {}
-    allHashtags.forEach(tag => {
-      hashtagCount[tag] = (hashtagCount[tag] || 0) + 1
-    })
-    
-    // 상위 5개 해시태그 추출
-    const trending = Object.entries(hashtagCount)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 5)
-      .map(([tag]) => tag)
-    
-    setTrendingHashtags(trending)
-  }
+
 
   // 팔로잉/팔로워 데이터 로드
   const loadFollowingData = async () => {
@@ -1540,11 +1676,36 @@ export default function MainApp() {
                 </div>
 
                 <div className="mini-actions">
-                  <button className="pill">📷 사진</button>
-                  <button className="pill">📍 위치</button>
-                  <button className="pill">🏷 태그</button>
+                  <label htmlFor="image-upload" className="pill image-upload-btn">
+                    📷 사진
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
                 </div>
               </div>
+
+              {/* 이미지 미리보기 */}
+              {imagePreview && (
+                <div className="image-preview-container">
+                  <img 
+                    src={imagePreview} 
+                    alt="업로드할 이미지" 
+                    className="image-preview"
+                  />
+                  <button 
+                    className="remove-image-btn"
+                    onClick={removeImage}
+                    title="이미지 제거"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
 
               <button
                 className="btn primary full"
@@ -1788,6 +1949,16 @@ export default function MainApp() {
                         <div>
                           <h3 className="post-title">{p.title}</h3>
                           <p className="text">{p.content}</p>
+                          {/* 게시글 이미지 표시 */}
+                          {p.image_url && (
+                            <div className="post-image-container">
+                              <img 
+                                src={p.image_url} 
+                                alt="게시글 이미지" 
+                                className="post-image"
+                              />
+                            </div>
+                          )}
                         </div>
                                                     <div className="post-actions">
                               <button 
@@ -1850,24 +2021,33 @@ export default function MainApp() {
                               {/* 홈피드는 이미 팔로워들이므로 팔로우 버튼 불필요 */}
                             </div>
                             {/* 내 게시글인 경우 수정/삭제 버튼 */}
-                            {currentUser?.id === p.user_id && (
-                              <div className="post-actions-menu">
-                                <button 
-                                  className="btn-edit" 
-                                  onClick={() => startEdit(p)}
-                                  disabled={isLoading}
-                                >
-                                  ✏️ 수정
-                                </button>
-                                <button 
-                                  className="btn-delete" 
-                                  onClick={() => handleDeletePost(p.id)}
-                                  disabled={isLoading}
-                                >
-                                  🗑️ 삭제
-                                </button>
-                              </div>
-                            )}
+                            {(() => {
+                              const isMyPost = currentUser?.id === p.user_id;
+                              console.log(`🔍 게시글 ${p.id} 권한 확인:`, {
+                                postUserId: p.user_id,
+                                currentUserId: currentUser?.id,
+                                isMyPost: isMyPost,
+                                currentUser: currentUser
+                              });
+                              return isMyPost ? (
+                                <div className="post-actions-menu">
+                                  <button 
+                                    className="btn-edit" 
+                                    onClick={() => startEdit(p)}
+                                    disabled={isLoading}
+                                  >
+                                    ✏️ 수정
+                                  </button>
+                                  <button 
+                                    className="btn-delete" 
+                                    onClick={() => handleDeletePost(p.id)}
+                                    disabled={isLoading}
+                                  >
+                                    🗑️ 삭제
+                                  </button>
+                                </div>
+                              ) : null;
+                            })()}
                           </div>
                         </div>
 
@@ -1907,18 +2087,14 @@ export default function MainApp() {
                           <div>
                             <h3 className="post-title">{p.title}</h3>
                             <p className="text">{p.content}</p>
-                            {/* 해시태그 표시 */}
-                            {extractHashtags(p.content).length > 0 && (
-                              <div className="hashtags">
-                                {extractHashtags(p.content).map((tag, index) => (
-                                  <button
-                                    key={index}
-                                    className="hashtag"
-                                    onClick={() => handleHashtagClick(tag)}
-                                  >
-                                    {tag}
-                                  </button>
-                                ))}
+                            {/* 게시글 이미지 표시 */}
+                            {p.image_url && (
+                              <div className="post-image-container">
+                                <img 
+                                  src={p.image_url} 
+                                  alt="게시글 이미지" 
+                                  className="post-image"
+                                />
                               </div>
                             )}
                           </div>
@@ -2205,34 +2381,81 @@ export default function MainApp() {
            {/* 마이룸 메뉴는 프로필 페이지로 리다이렉트됩니다 */}
         </main>
 
-        {/* ===== 우측(트렌드만) ===== */}
+        {/* ===== 우측(랜덤채팅) ===== */}
         <aside className="right">
           <section className="card widget">
             <div className="widget-head">
-              <span>📈</span><h4>실시간 트렌드</h4>
+              <span>💬</span><h4>랜덤채팅</h4>
             </div>
-            <ol className="trend">
-              {trendingHashtags.length > 0 ? (
-                trendingHashtags.map((tag, index) => (
-                  <li key={index}>
+            <div className="random-chat-container">
+              <div className="chat-status">
+                <span className="status-indicator online"></span>
+                <span className="status-text">온라인 사용자: {onlineUsersCount}</span>
+              </div>
+              
+              <div className="chat-actions">
+                <button 
+                  className="btn primary start-chat-btn"
+                  onClick={startRandomChat}
+                  disabled={isChatting}
+                >
+                  {isChatting ? '채팅 중...' : '랜덤채팅 시작'}
+                </button>
+                
+                {isChatting && (
+                  <button 
+                    className="btn ghost end-chat-btn"
+                    onClick={endRandomChat}
+                  >
+                    채팅 종료
+                  </button>
+                )}
+              </div>
+
+              {isChatting && (
+                <div className="chat-interface">
+                  <div className="chat-messages" ref={chatMessagesRef}>
+                    {chatMessages.map((msg, index) => (
+                      <div 
+                        key={index} 
+                        className={`chat-message ${msg.isOwn ? 'own' : 'other'}`}
+                      >
+                        <div className="message-content">
+                          <span className="message-text">{msg.text}</span>
+                          <span className="message-time">{msg.time}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="chat-input">
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="메시지를 입력하세요..."
+                      onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
+                    />
                     <button 
-                      className="trending-hashtag"
-                      onClick={() => handleHashtagClick(tag)}
+                      className="send-btn"
+                      onClick={sendChatMessage}
+                      disabled={!chatInput.trim()}
                     >
-                      {tag}
+                      전송
                     </button>
-                  </li>
-                ))
-              ) : (
-                <>
-                  <li>#중간고사스터디</li>
-                  <li>#학교맛집</li>
-                  <li>#과제도움</li>
-                  <li>#동아리모집</li>
-                  <li>#교재나눔</li>
-                </>
+                  </div>
+                </div>
               )}
-            </ol>
+
+              {!isChatting && (
+                <div className="chat-info">
+                  <p>💡 랜덤채팅으로 새로운 친구를 만나보세요!</p>
+                  <p>• 익명으로 대화 가능</p>
+                  <p>• 관심사가 비슷한 사용자와 매칭</p>
+                  <p>• 언제든지 채팅 종료 가능</p>
+                </div>
+              )}
+            </div>
           </section>
         </aside>
       </div>

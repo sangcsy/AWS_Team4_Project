@@ -27,18 +27,12 @@ export class NotificationController {
             
                   const result = await this.notificationService.getUserNotifications(userId, page, limit);
                   
-                  console.log('✅ 알림 조회 결과:', {
-                    total: result.total,
-                    unread_count: result.unread_count,
-                    notifications_count: result.notifications.length
-                  });
-            
                   res.json({
                     success: true,
                     data: result
                   });
                 } catch (error) {
-                  console.error('❌ 알림 조회 실패:', error);
+                  console.error('알림 조회 실패:', error);
                   res.status(500).json({
                     success: false,
                     error: '알림을 가져오는데 실패했습니다.'

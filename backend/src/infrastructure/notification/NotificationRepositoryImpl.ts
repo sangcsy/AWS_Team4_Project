@@ -66,34 +66,24 @@ export class NotificationRepositoryImpl implements NotificationRepository {
 
   async findByUserId(userId: string, page = 1, limit = 20): Promise<NotificationListResponse> {
     try {
-      console.log('🔍 NotificationRepositoryImpl.findByUserId 시작:', { userId, page, limit });
-      
       const pool = await databaseConnection.getPool();
-      console.log('✅ 데이터베이스 풀 연결 성공');
-      
       const offset = (page - 1) * limit;
-      console.log('🔍 offset, limit 계산:', { offset, limit });
       
       // 전체 개수 조회
-      console.log('🔍 전체 개수 조회 시작');
       const [countRows] = await pool.execute(
         'SELECT COUNT(*) as total FROM notifications WHERE user_id = ?',
         [userId]
       );
       const total = countRows[0].total;
-      console.log('✅ 전체 개수 조회 완료:', total);
 
       // 읽지 않은 알림 개수 조회
-      console.log('🔍 읽지 않은 알림 개수 조회 시작');
       const [unreadRows] = await pool.execute(
         'SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = FALSE',
         [userId]
       );
       const unread_count = unreadRows[0].count;
-      console.log('✅ 읽지 않은 알림 개수 조회 완료:', unread_count);
 
       // 알림 목록 조회 (사용자 정보와 함께 JOIN)
-      console.log('🔍 알림 목록 조회 시작 (JOIN 포함)');
       const [rows] = await pool.execute(`
         SELECT 
           n.*,
@@ -107,7 +97,6 @@ export class NotificationRepositoryImpl implements NotificationRepository {
         ORDER BY n.created_at DESC
         LIMIT ${offset}, ${limit}
       `, [userId]);
-      console.log('✅ 알림 목록 조회 완료, 결과 개수:', rows.length);
 
       const notifications = rows.map((row: any) => ({
         id: row.id,

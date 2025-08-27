@@ -14,6 +14,7 @@ import { errorHandler, notFoundHandler } from './interfaces/middlewares/errorHan
 import profileRoutes from './interfaces/routes/profileRoutes';
 import matchingRoutes from './interfaces/routes/matchingRoutes';
 import chatRoutes from './interfaces/routes/chatRoutes';
+import uploadRoutes from './interfaces/routes/uploadRoutes';
 import { WebSocketNotificationService } from './application/notification/WebSocketNotificationService';
 import { NotificationService } from './application/notification/NotificationService';
 import { NotificationRepositoryImpl } from './infrastructure/notification/NotificationRepositoryImpl';
@@ -41,6 +42,9 @@ app.use(express.json());
 
 // 정적 파일 서빙 (테스트 페이지용)
 app.use(express.static(path.join(__dirname, '..')));
+
+// 정적 파일 서빙 (업로드된 이미지)
+app.use('/uploads', express.static('uploads'));
 
 // 루트 경로
 app.get('/', (req, res) => {
@@ -88,6 +92,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/matching', matchingRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // 404 핸들러 (존재하지 않는 API 엔드포인트)
 app.use('/api/*', notFoundHandler);

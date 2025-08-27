@@ -25,14 +25,10 @@ export class CommentService {
     
     // 댓글 알림 생성
     try {
-      console.log('🔔 댓글 알림 생성 시작:', { postId, userId, commentId: comment.id });
-      
-      // 게시글 작성자 정보 가져오기 (댓글 알림을 받을 사람)
       const postRepository = new (await import('../../infrastructure/post/PostRepositoryImpl')).PostRepositoryImpl();
       const post = await postRepository.findById(postId);
       
       if (post && post.user_id !== userId) { // 자기 자신의 게시글에 댓글을 다는 경우는 알림 생성 안함
-        // 댓글 작성자 정보 가져오기
         const userRepository = new (await import('../../functions/auth/UserRepositoryImpl')).UserRepositoryImpl();
         const commenter = await userRepository.findById(userId);
         
@@ -43,11 +39,10 @@ export class CommentService {
             userId,       // 댓글 작성자
             commenter.nickname
           );
-          console.log('✅ 댓글 알림 생성 완료');
         }
       }
     } catch (error) {
-      console.error('❌ 댓글 알림 생성 실패:', error);
+      console.error('댓글 알림 생성 실패:', error);
       // 알림 생성 실패는 댓글 기능에 영향을 주지 않음
     }
     
@@ -63,23 +58,16 @@ export class CommentService {
   }
 
   async getCommentsByPost(postId: string, page: number = 1, limit: number = 10): Promise<CommentListResponse> {
-    try {
-      console.log('CommentService.getCommentsByPost - params:', { postId, page, limit }); // 디버깅용
-      
-      const result = await this.commentRepository.findByPostId(postId, page, limit);
-      
-      const comments = result.comments.map(comment => this.toCommentResponse(comment));
-      
-      return {
-        comments,
-        total: result.total,
-        page,
-        limit
-      };
-    } catch (error) {
-      console.error('CommentService.getCommentsByPost - error:', error); // 디버깅용
-      throw error;
-    }
+    const result = await this.commentRepository.findByPostId(postId, page, limit);
+    
+    const comments = result.comments.map(comment => this.toCommentResponse(comment));
+    
+    return {
+      comments,
+      total: result.total,
+      page,
+      limit
+    };
   }
 
   async getCommentsByUser(userId: string, page: number = 1, limit: number = 10): Promise<CommentListResponse> {

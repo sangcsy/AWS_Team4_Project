@@ -759,30 +759,38 @@ body, input, button, textarea {
   }
 
   .btn-edit, .btn-delete {
-    padding: 6px 12px;
-    border-radius: 6px;
-    border: none;
-    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    min-width: 60px;
   }
 
   .btn-edit {
     background: #f0f9ff;
     color: var(--brand);
+    border-color: #e0f2fe;
   }
 
   .btn-edit:hover {
     background: #e0f2fe;
+    border-color: #bae6fd;
+    transform: translateY(-1px);
   }
 
   .btn-delete {
     background: #fef2f2;
     color: #dc2626;
+    border-color: #fecaca;
   }
 
   .btn-delete:hover {
     background: #fee2e2;
+    border-color: #fca5a5;
+    transform: translateY(-1px);
   }
 
   /* ===== 중앙 컴포저 개선 ===== */

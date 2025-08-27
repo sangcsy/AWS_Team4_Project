@@ -35,35 +35,18 @@ export class FollowService {
     
     // 팔로우 알림 생성
     try {
-      console.log('🔔 팔로우 알림 생성 시작:', { 
-        followerId, 
-        followingId: data.following_id,
-        followId: follow.id 
-      });
-      
-      // 팔로우하는 사용자의 닉네임 가져오기
       const userRepository = new (await import('../../functions/auth/UserRepositoryImpl')).UserRepositoryImpl();
       const follower = await userRepository.findById(followerId);
       
-      console.log('🔔 팔로우 사용자 정보 조회 결과:', {
-        id: follower?.id,
-        nickname: follower?.nickname,
-        email: follower?.email
-      });
-      
       if (follower) {
-        console.log('🔔 팔로우 알림 생성 중...');
         await this.notificationService.createFollowNotification(
           data.following_id,
           followerId,
           follower.nickname
         );
-        console.log('✅ 팔로우 알림 생성 완료');
-      } else {
-        console.log('❌ 팔로우 사용자 정보를 찾을 수 없음');
       }
     } catch (error) {
-      console.error('❌ 팔로우 알림 생성 실패:', error);
+      console.error('팔로우 알림 생성 실패:', error);
       // 알림 생성 실패는 팔로우 기능에 영향을 주지 않음
     }
     

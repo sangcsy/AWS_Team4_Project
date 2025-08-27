@@ -30,30 +30,23 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) => {
                 // 알림 목록 조회
               const fetchNotifications = async () => {
                 try {
-                  console.log('🔍 NotificationBell.fetchNotifications 시작');
                   const token = localStorage.getItem('token');
-                  console.log('🔍 토큰 확인:', token ? '토큰 있음' : '토큰 없음');
                   
                   const response = await fetch('http://localhost:3000/api/notifications', {
                     headers: {
                       'Authorization': `Bearer ${token}`
                     }
                   });
-                  
-                  console.log('🔍 API 응답 상태:', response.status, response.ok);
             
                   if (response.ok) {
                     const data = await response.json();
-                    console.log('✅ 알림 데이터 수신:', data);
                     setNotifications(data.data.notifications);
                     setUnreadCount(data.data.unread_count);
                   } else {
-                    console.error('❌ API 응답 실패:', response.status);
-                    const errorText = await response.text();
-                    console.error('❌ 에러 내용:', errorText);
+                    console.error('알림 조회 실패:', response.status);
                   }
                 } catch (error) {
-                  console.error('❌ 알림 조회 실패:', error);
+                  console.error('알림 조회 실패:', error);
                 }
               };
 
