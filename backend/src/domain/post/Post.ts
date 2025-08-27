@@ -3,6 +3,7 @@ export interface Post {
   user_id: string;
   title: string;
   content: string;
+  category?: string;
   temperature_change: number;
   created_at: Date;
   updated_at: Date;
@@ -19,12 +20,14 @@ export interface Post {
 export interface CreatePostRequest {
   title: string;
   content: string;
+  category?: string;
   temperature_change?: number;
 }
 
 export interface UpdatePostRequest {
   title?: string;
   content?: string;
+  category?: string;
   temperature_change?: number;
 }
 
@@ -33,6 +36,7 @@ export interface PostResponse {
   user_id: string;
   title: string;
   content: string;
+  category?: string;
   temperature_change: number;
   created_at: Date;
   updated_at: Date;

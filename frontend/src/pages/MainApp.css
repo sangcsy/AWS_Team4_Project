@@ -62,6 +62,11 @@
   gap: 10px;
   margin-bottom: 20px;
   align-items: center;
+  margin-left: auto; /* 오른쪽 정렬 */
+}
+
+.top-actions .notification-bell {
+  margin-right: 10px; /* 알림과 다른 버튼들 사이 간격 */
 }
 
 .chip {

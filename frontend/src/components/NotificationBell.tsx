@@ -3,13 +3,18 @@ import './NotificationBell.css';
 
 interface Notification {
   id: string;
-  type: 'like' | 'comment' | 'follow' | 'mention' | 'system';
-  title: string;
-  message: string;
-  related_post_id?: string;
-  related_user_id?: string;
-  is_read: boolean;
+  type: 'like' | 'comment' | 'follow' | 'mention';
+  content: string;
+  post_id?: string;
+  sender_id: string;
   created_at: string;
+  is_read: boolean;
+  sender?: {
+    nickname: string;
+  };
+  post?: {
+    title: string;
+  };
 }
 
 interface NotificationBellProps {
@@ -20,16 +25,43 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // 알림 목록 로드
-  const loadNotifications = async () => {
+                // 알림 목록 조회
+              const fetchNotifications = async () => {
+                try {
+                  console.log('🔍 NotificationBell.fetchNotifications 시작');
+                  const token = localStorage.getItem('token');
+                  console.log('🔍 토큰 확인:', token ? '토큰 있음' : '토큰 없음');
+                  
+                  const response = await fetch('http://localhost:3000/api/notifications', {
+                    headers: {
+                      'Authorization': `Bearer ${token}`
+                    }
+                  });
+                  
+                  console.log('🔍 API 응답 상태:', response.status, response.ok);
+            
+                  if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ 알림 데이터 수신:', data);
+                    setNotifications(data.data.notifications);
+                    setUnreadCount(data.data.unread_count);
+                  } else {
+                    console.error('❌ API 응답 실패:', response.status);
+                    const errorText = await response.text();
+                    console.error('❌ 에러 내용:', errorText);
+                  }
+                } catch (error) {
+                  console.error('❌ 알림 조회 실패:', error);
+                }
+              };
+
+  // 읽지 않은 알림 개수 조회
+  const fetchUnreadCount = async () => {
     try {
-      setLoading(true);
       const token = localStorage.getItem('token');
-      if (!token) return;
-
-      const response = await fetch(`http://localhost:3000/api/notifications?limit=20`, {
+      const response = await fetch('http://localhost:3000/api/notifications/unread-count', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -37,112 +69,118 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) => {
 
       if (response.ok) {
         const data = await response.json();
-        setNotifications(data.data.notifications);
-        setUnreadCount(data.data.notifications.filter((n: Notification) => !n.is_read).length);
-      } else if (response.status === 500) {
-        // 서버 에러 시 빈 배열로 설정 (알림 기능 일시 비활성화)
-        console.log('⚠️ 알림 서버 에러, 알림 기능을 일시적으로 비활성화합니다.');
-        setNotifications([]);
-        setUnreadCount(0);
+        setUnreadCount(data.data.unread_count);
       }
     } catch (error) {
-      console.error('알림 로드 실패:', error);
-      // 에러 시에도 빈 배열로 설정
-      setNotifications([]);
-      setUnreadCount(0);
-    } finally {
-      setLoading(false);
+      console.error('읽지 않은 알림 개수 조회 실패:', error);
     }
   };
 
-  // 읽지 않은 알림 개수 로드
-  const loadUnreadCount = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-
-      const response = await fetch(`http://localhost:3000/api/notifications/unread-count`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUnreadCount(data.data.unreadCount);
-      } else if (response.status === 500) {
-        // 서버 에러 시 0으로 설정
-        console.log('⚠️ 알림 개수 서버 에러, 0으로 설정합니다.');
-        setUnreadCount(0);
-      }
-    } catch (error) {
-      console.error('읽지 않은 알림 개수 로드 실패:', error);
-      setUnreadCount(0);
-    }
-  };
-
-  // 알림 읽음 처리
+  // 알림을 읽음으로 표시
   const markAsRead = async (notificationId: string) => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) return;
-
       const response = await fetch(`http://localhost:3000/api/notifications/${notificationId}/read`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
       if (response.ok) {
+        // 로컬 상태 업데이트
         setNotifications(prev => 
-          prev.map(n => 
-            n.id === notificationId ? { ...n, is_read: true } : n
+          prev.map(notif => 
+            notif.id === notificationId ? { ...notif, is_read: true } : notif
           )
         );
         setUnreadCount(prev => Math.max(0, prev - 1));
       }
     } catch (error) {
-      console.error('알림 읽음 처리 실패:', error);
+      console.error('알림 읽음 표시 실패:', error);
     }
   };
 
-  // 모든 알림 읽음 처리
+  // 모든 알림을 읽음으로 표시
   const markAllAsRead = async () => {
     try {
+      setIsLoading(true);
       const token = localStorage.getItem('token');
-      if (!token) return;
-
-      const response = await fetch(`http://localhost:3000/api/notifications/read-all`, {
-        method: 'PATCH',
+      const response = await fetch('http://localhost:3000/api/notifications/mark-all-read', {
+        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
       if (response.ok) {
-        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+        setNotifications(prev => prev.map(notif => ({ ...notif, is_read: true })));
         setUnreadCount(0);
       }
     } catch (error) {
-      console.error('모든 알림 읽음 처리 실패:', error);
+      console.error('모든 알림 읽음 표시 실패:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 알림 삭제
+  const deleteNotification = async (notificationId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:3000/api/notifications/${notificationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
+        // 삭제된 알림이 읽지 않았다면 개수 감소
+        const deletedNotification = notifications.find(n => n.id === notificationId);
+        if (deletedNotification && !deletedNotification.is_read) {
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
+      }
+    } catch (error) {
+      console.error('알림 삭제 실패:', error);
     }
   };
 
   // 알림 타입별 아이콘
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'like': return '❤️';
-      case 'comment': return '💬';
-      case 'follow': return '👥';
-      case 'mention': return '📢';
-      case 'system': return '🔔';
-      default: return '📌';
+      case 'like':
+        return '❤️';
+      case 'comment':
+        return '💬';
+      case 'follow':
+        return '👥';
+      case 'mention':
+        return '📢';
+      default:
+        return '🔔';
     }
   };
 
+  // 알림 클릭 시 처리
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.is_read) {
+      markAsRead(notification.id);
+    }
+    
+    // 게시글이 있는 경우 해당 게시글로 이동
+    if (notification.post_id) {
+      // TODO: 게시글로 이동하는 로직 구현
+      console.log('게시글로 이동:', notification.post_id);
+    }
+    
+    setIsOpen(false);
+  };
+
   // 시간 포맷팅
-  const formatTimeAgo = (dateString: string) => {
+  const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
@@ -154,26 +192,28 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) => {
   };
 
   useEffect(() => {
-    // 토큰이 있을 때만 알림 로드
-    const token = localStorage.getItem('token');
-    if (userId && token) {
-      loadNotifications();
-      loadUnreadCount();
-      
-      // 주기적으로 읽지 않은 알림 개수 업데이트
-      const interval = setInterval(loadUnreadCount, 30000); // 30초마다
-      return () => clearInterval(interval);
+    if (userId) {
+      fetchNotifications();
+      fetchUnreadCount();
     }
   }, [userId]);
 
   return (
     <div className="notification-bell">
-      <div className="notification-icon" onClick={() => setIsOpen(!isOpen)}>
-        🔔
-        {unreadCount > 0 && (
-          <span className="notification-badge">{unreadCount}</span>
+      <button 
+        className="notification-button"
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label="알림"
+      >
+        {unreadCount > 0 ? (
+          <span className="notification-icon active">🔔</span>
+        ) : (
+          <span className="notification-icon">🔔</span>
         )}
-      </div>
+        {unreadCount > 0 && (
+          <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+        )}
+      </button>
 
       {isOpen && (
         <div className="notification-dropdown">
@@ -183,34 +223,51 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) => {
               <button 
                 className="mark-all-read-btn"
                 onClick={markAllAsRead}
+                disabled={isLoading}
               >
-                모두 읽음
+                {isLoading ? '처리 중...' : '모두 읽음'}
               </button>
             )}
           </div>
 
           <div className="notification-list">
-            {loading ? (
-              <div className="loading">로딩 중...</div>
-            ) : notifications.length === 0 ? (
-              <div className="no-notifications">알림이 없습니다.</div>
+            {notifications.length === 0 ? (
+              <div className="no-notifications">
+                <p>새로운 알림이 없습니다.</p>
+              </div>
             ) : (
               notifications.map(notification => (
                 <div 
-                  key={notification.id} 
+                  key={notification.id}
                   className={`notification-item ${!notification.is_read ? 'unread' : ''}`}
-                  onClick={() => markAsRead(notification.id)}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="notification-icon-small">
                     {getNotificationIcon(notification.type)}
                   </div>
                   <div className="notification-content">
-                    <div className="notification-title">{notification.title}</div>
-                    <div className="notification-message">{notification.message}</div>
-                    <div className="notification-time">
-                      {formatTimeAgo(notification.created_at)}
+                    <p className="notification-text">{notification.content}</p>
+                    <div className="notification-meta">
+                      <span className="notification-time">
+                        {formatTime(notification.created_at)}
+                      </span>
+                      {notification.post && (
+                        <span className="notification-post">
+                          {notification.post.title}
+                        </span>
+                      )}
                     </div>
                   </div>
+                  <button
+                    className="delete-notification-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteNotification(notification.id);
+                    }}
+                    aria-label="알림 삭제"
+                  >
+                    ×
+                  </button>
                 </div>
               ))
             )}

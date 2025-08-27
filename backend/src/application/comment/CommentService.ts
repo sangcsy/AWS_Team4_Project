@@ -1,9 +1,16 @@
 import { v4 as uuidv4 } from 'uuid';
 import { CommentRepository } from '../../domain/comment/CommentRepository';
 import { Comment, CreateCommentRequest, UpdateCommentRequest, CommentResponse, CommentListResponse } from '../../domain/comment/Comment';
+import { NotificationService } from '../notification/NotificationService';
+import { NotificationRepositoryImpl } from '../../infrastructure/notification/NotificationRepositoryImpl';
 
 export class CommentService {
-  constructor(private commentRepository: CommentRepository) {}
+  private notificationService: NotificationService;
+
+  constructor(private commentRepository: CommentRepository) {
+    const notificationRepository = new NotificationRepositoryImpl();
+    this.notificationService = new NotificationService(notificationRepository);
+  }
 
   async createComment(commentData: CreateCommentRequest, postId: string, userId: string): Promise<CommentResponse> {
     // 내용 검증
@@ -15,6 +22,35 @@ export class CommentService {
     const temperatureChange = commentData.temperature_change || 0.0;
 
     const comment = await this.commentRepository.create(commentData, postId, userId);
+    
+    // 댓글 알림 생성
+    try {
+      console.log('🔔 댓글 알림 생성 시작:', { postId, userId, commentId: comment.id });
+      
+      // 게시글 작성자 정보 가져오기 (댓글 알림을 받을 사람)
+      const postRepository = new (await import('../../infrastructure/post/PostRepositoryImpl')).PostRepositoryImpl();
+      const post = await postRepository.findById(postId);
+      
+      if (post && post.user_id !== userId) { // 자기 자신의 게시글에 댓글을 다는 경우는 알림 생성 안함
+        // 댓글 작성자 정보 가져오기
+        const userRepository = new (await import('../../functions/auth/UserRepositoryImpl')).UserRepositoryImpl();
+        const commenter = await userRepository.findById(userId);
+        
+        if (commenter) {
+          await this.notificationService.createCommentNotification(
+            postId,
+            post.user_id, // 게시글 작성자
+            userId,       // 댓글 작성자
+            commenter.nickname
+          );
+          console.log('✅ 댓글 알림 생성 완료');
+        }
+      }
+    } catch (error) {
+      console.error('❌ 댓글 알림 생성 실패:', error);
+      // 알림 생성 실패는 댓글 기능에 영향을 주지 않음
+    }
+    
     return this.toCommentResponse(comment);
   }
 

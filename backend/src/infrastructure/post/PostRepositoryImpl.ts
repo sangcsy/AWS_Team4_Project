@@ -242,6 +242,11 @@ export class PostRepositoryImpl implements PostRepository {
       updateValues.push(updates.content);
     }
 
+    if (updates.category !== undefined) {
+      updateFields.push('category = ?');
+      updateValues.push(updates.category);
+    }
+
     if (updates.temperature_change !== undefined) {
       updateFields.push('temperature_change = ?');
       updateValues.push(updates.temperature_change);

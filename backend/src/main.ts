@@ -14,6 +14,9 @@ import { errorHandler, notFoundHandler } from './interfaces/middlewares/errorHan
 import profileRoutes from './interfaces/routes/profileRoutes';
 import matchingRoutes from './interfaces/routes/matchingRoutes';
 import chatRoutes from './interfaces/routes/chatRoutes';
+import { WebSocketNotificationService } from './application/notification/WebSocketNotificationService';
+import { NotificationService } from './application/notification/NotificationService';
+import { NotificationRepositoryImpl } from './infrastructure/notification/NotificationRepositoryImpl';
 
 // JWT_SECRET 설정 (환경변수가 없으면 기본값 사용)
 if (!process.env['JWT_SECRET']) {
@@ -93,6 +96,11 @@ app.use('/api/*', notFoundHandler);
 app.use(errorHandler);
 
 // Mock API 제거 - 실제 API 라우터 사용
+
+// WebSocket 알림 서비스 초기화
+const notificationRepository = new NotificationRepositoryImpl();
+const notificationService = new NotificationService(notificationRepository);
+const webSocketNotificationService = new WebSocketNotificationService(io, notificationService);
 
 // Socket.io 연결 처리
 io.on('connection', (socket: any) => {

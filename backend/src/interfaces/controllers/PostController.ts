@@ -108,7 +108,7 @@ export class PostController {
   updatePost = async (req, res) => {
     try {
       const { id } = req.params;
-      const { title, content, temperature_change } = req.body;
+      const { title, content, category, temperature_change } = req.body;
       const userId = req.user?.userId;
 
       if (!userId) {
@@ -118,7 +118,7 @@ export class PostController {
         });
       }
 
-      const post = await this.postService.updatePost(id, { title, content, temperature_change }, userId);
+      const post = await this.postService.updatePost(id, { title, content, category, temperature_change }, userId);
 
       res.json({
         success: true,

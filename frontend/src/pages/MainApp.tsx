@@ -1781,15 +1781,7 @@ export default function MainApp() {
                               <span className="chip delta">
                                 📈 {p.temperature_change > 0 ? `+${p.temperature_change}℃` : `${p.temperature_change}℃`}
                               </span>
-                              {/* 팔로우/언팔로우 버튼 (내 게시글이 아닌 경우만) */}
-                              {currentUser?.id !== p.user_id && (
-                                <button 
-                                  className={`chip follow-btn ${p.isFollowing ? 'following' : ''}`}
-                                  onClick={() => toggleFollow(p.user_id)}
-                                >
-                                  {p.isFollowing ? '👥 팔로잉' : '➕ 팔로우'}
-                                </button>
-                              )}
+                              {/* 홈피드 검색 결과는 이미 팔로워들이므로 팔로우 버튼 불필요 */}
                             </div>
                           </div>
                         </div>
@@ -1806,7 +1798,7 @@ export default function MainApp() {
                                 <span className="like-count">{p.likes || 0}</span>
                               </button>
                               <button className="comment-btn">💬 {p.comments?.length || 0}</button>
-                              <button className="share-btn">↗ 공유</button>
+
                             </div>
                       </article>
                     ))
@@ -1855,15 +1847,7 @@ export default function MainApp() {
                               <span className="chip follow-status">
                                 {p.isFollowing ? '👥 팔로워' : (p.isPopular ? '🔥 인기' : '💫 추천')}
                               </span>
-                              {/* 팔로우/언팔로우 버튼 (내 게시글이 아닌 경우만) */}
-                              {currentUser?.id !== p.user_id && (
-                                <button 
-                                  className={`chip follow-btn ${p.isFollowing ? 'following' : ''}`}
-                                  onClick={() => toggleFollow(p.user_id)}
-                                >
-                                  {p.isFollowing ? '👥 팔로잉' : '➕ 팔로우'}
-                                </button>
-                              )}
+                              {/* 홈피드는 이미 팔로워들이므로 팔로우 버튼 불필요 */}
                             </div>
                             {/* 내 게시글인 경우 수정/삭제 버튼 */}
                             {currentUser?.id === p.user_id && (
@@ -1954,7 +1938,7 @@ export default function MainApp() {
                           >
                             💬 {p.comments?.length || 0}
                           </button>
-                          <button className="chip">↗ 공유</button>
+
                         </div>
 
                         {/* 댓글 입력 폼 */}
@@ -2054,6 +2038,15 @@ export default function MainApp() {
                             <span className="icon">🔥</span>
                             {p.user?.temperature || 36.5}℃
                           </span>
+                          {/* 커뮤니티는 팔로우하지 않은 사람들을 위한 팔로우 버튼 필요 */}
+                          {currentUser?.id !== p.user_id && (
+                            <button 
+                              className={`chip follow-btn ${p.isFollowing ? 'following' : ''}`}
+                              onClick={() => toggleFollow(p.user_id)}
+                            >
+                              {p.isFollowing ? '👥 팔로잉' : '➕ 팔로우'}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2075,7 +2068,6 @@ export default function MainApp() {
                       >
                         💬 {p.comments?.length || 0}
                       </button>
-                      <button className="chip">↗ 공유</button>
                     </div>
                     {/* 댓글 입력 폼 */}
                     {replyingTo === p.id && (
@@ -2168,7 +2160,6 @@ export default function MainApp() {
                       >
                         💬 {p.comments?.length || 0}
                       </button>
-                      <button className="chip">↗ 공유</button>
                     </div>
                     {/* 댓글 입력 폼 */}
                     {replyingTo === p.id && (
