@@ -75,6 +75,30 @@ export default function UserProfile() {
   // 좋아요한 게시글 ID 목록을 로컬 스토리지에서 복원
   const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
 
+  // 인증 상태 확인 및 리다이렉트
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    const userId = localStorage.getItem('userId')
+    
+    if (!token || !userId || token === 'undefined' || userId === 'undefined') {
+      console.log('🚫 UserProfile: 인증 정보가 없음, 랜딩 페이지로 리다이렉트')
+      localStorage.clear()
+      window.location.href = '/'
+      return
+    }
+    
+    // 토큰 형식 검증
+    if (typeof token === 'string' && !token.includes('.')) {
+      console.log('🚫 UserProfile: 잘못된 토큰 형식, 랜딩 페이지로 리다이렉트')
+      localStorage.clear()
+      window.location.href = '/'
+      return
+    }
+    
+    console.log('✅ UserProfile: 인증 확인 완료')
+    // setCurrentUser({ id: userId }) // This line was not in the new_code, so it's removed.
+  }, [])
+
   // 로컬 스토리지에서 좋아요한 게시글 ID 목록 복원
   useEffect(() => {
     const savedLikedIds = localStorage.getItem(`likedPosts_${currentUserId}`);

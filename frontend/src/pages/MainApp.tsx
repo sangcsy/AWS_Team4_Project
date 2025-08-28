@@ -75,6 +75,30 @@ export default function MainApp() {
   const [selectedCategory, setSelectedCategory] = useState<string>('전체')
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([])
   
+  // 인증 체크 - 로그인하지 않은 사용자는 랜딩 페이지로 리다이렉트
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    const userId = localStorage.getItem('userId')
+    
+    if (!token || !userId || token === 'undefined' || userId === 'undefined') {
+      console.log('🚫 MainApp: 인증 정보가 없음, 랜딩 페이지로 리다이렉트')
+      localStorage.clear()
+      window.location.href = '/'
+      return
+    }
+    
+    // 토큰 형식 검증
+    if (typeof token === 'string' && !token.includes('.')) {
+      console.log('🚫 MainApp: 잘못된 토큰 형식, 랜딩 페이지로 리다이렉트')
+      localStorage.clear()
+      window.location.href = '/'
+      return
+    }
+    
+    console.log('✅ MainApp: 인증 확인 완료')
+    setCurrentUser({ id: userId })
+  }, [])
+
   // 초기 상태 설정 - 게시글 개수 안정화
   useEffect(() => {
     if (posts.length > 0) {

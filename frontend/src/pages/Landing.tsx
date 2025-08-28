@@ -5,7 +5,7 @@ import { createApiUrl } from '../config/api'
 
 export default function Landing() {
   const navigate = useNavigate()
-  const [appName] = useState('campdrop')
+  const [appName] = useState('tempus')
   const [showHow, setShowHow] = useState(false)
   
   // 인증 상태
@@ -20,6 +20,32 @@ export default function Landing() {
     document.body.style.overflow = showHow ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [showHow])
+
+  // 컴포넌트 마운트 시 localStorage 정리 (테스트용)
+  useEffect(() => {
+    // 개발 중에는 localStorage를 정리하여 인증 상태 초기화
+    if (import.meta.env.DEV) {
+      console.log('🧹 개발 모드: localStorage 정리')
+      localStorage.clear()
+    }
+  }, [])
+
+  // 보호된 라우트로 이동하는 함수
+  const handleProtectedNavigation = (closeOverlay = false) => {
+    const token = localStorage.getItem('token')
+    const userId = localStorage.getItem('userId')
+    
+    if (!token || !userId) {
+      setError('로그인이 필요합니다.')
+      // 오버레이가 열려있다면 닫기
+      if (closeOverlay) {
+        setShowHow(false)
+      }
+      return
+    }
+    
+    navigate('/app')
+  }
 
   // 인증 함수들
   const handleAuth = async () => {
@@ -111,6 +137,10 @@ export default function Landing() {
 
           <div className="actions">
             <div className="auth-form">
+              <h1 className="auth-title">
+                {isLoginMode ? '로그인' : '회원가입'}
+              </h1>
+              
               {error && <div className="error-message">{error}</div>}
               
               <input
@@ -171,13 +201,17 @@ export default function Landing() {
             <p></p>
           </button>
 
-          {/* 🔹 Get started = /app 로 이동 (반드시 Link 사용) */}
-          <Link className="panel panel--start" to="/app">
+          {/* 🔹 Get started = 인증 확인 후 /app으로 이동 */}
+          <button
+            type="button"
+            className="panel panel--start as-button"
+            onClick={() => handleProtectedNavigation(true)}
+          >
             <h2 className="multi-title">
-              <span>Get</span><span>Started</span><span>with</span><span>campdrop!</span>
+              <span>Get</span><span>Started</span><span>with</span><span>tempus!</span>
             </h2>
             <p></p>
-          </Link>
+          </button>
         </aside>
       </main>
 
@@ -213,7 +247,7 @@ export default function Landing() {
           </div>
 
           <div className="how-cta">
-            <Link className="btn primary" to="/app">바로 시작하기</Link>
+            <button className="btn primary" onClick={() => handleProtectedNavigation(true)}>바로 시작하기</button>
             <button className="btn ghost" onClick={() => setShowHow(false)}>닫기</button>
           </div>
         </div>

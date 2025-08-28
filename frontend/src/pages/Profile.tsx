@@ -31,12 +31,26 @@ export default function Profile() {
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    if (!token) {
-      navigate('/')
+    const userId = localStorage.getItem('userId')
+    
+    if (!token || !userId || token === 'undefined' || userId === 'undefined') {
+      console.log('🚫 Profile: 인증 정보가 없음, 랜딩 페이지로 리다이렉트')
+      localStorage.clear()
+      window.location.href = '/'
       return
     }
+    
+    // 토큰 형식 검증
+    if (typeof token === 'string' && !token.includes('.')) {
+      console.log('🚫 Profile: 잘못된 토큰 형식, 랜딩 페이지로 리다이렉트')
+      localStorage.clear()
+      window.location.href = '/'
+      return
+    }
+    
+    console.log('✅ Profile: 인증 확인 완료')
     fetchProfile()
-  }, [navigate])
+  }, [])
 
   // 프로필 조회
   const fetchProfile = async () => {
