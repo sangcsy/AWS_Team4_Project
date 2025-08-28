@@ -1,6 +1,6 @@
 // src/pages/Landing.tsx
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'   // ✅ 꼭 필요!
+import { useNavigate } from 'react-router-dom'   // ✅ 꼭 필요!
 import { createApiUrl } from '../config/api'
 
 export default function Landing() {
