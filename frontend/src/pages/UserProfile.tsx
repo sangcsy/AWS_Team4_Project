@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import './UserProfile.css';
+import { createApiUrl } from '../config/api';
 
 // Post 타입 정의
 interface Post {
@@ -173,7 +174,7 @@ export default function UserProfile() {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`http://localhost:3000/api/users/profile/${userId}`, {
+      const response = await fetch(createApiUrl(`/api/users/profile/${userId}`), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -237,7 +238,7 @@ export default function UserProfile() {
   const loadUserPosts = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/posts?page=1&limit=1000`, {
+      const response = await fetch(createApiUrl(`/api/posts?page=1&limit=1000`), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -298,7 +299,7 @@ export default function UserProfile() {
       }
 
       // 좋아요한 게시글 ID로 게시글 정보 가져오기
-      const response = await fetch(`http://localhost:3000/api/posts?page=1&limit=1000`, {
+      const response = await fetch(createApiUrl(`/api/posts?page=1&limit=1000`), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -334,7 +335,7 @@ export default function UserProfile() {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`http://localhost:3000/api/follow/followers/${userId}?page=1&limit=50`, {
+      const response = await fetch(createApiUrl(`/api/follow/followers/${userId}?page=1&limit=50`), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -350,7 +351,7 @@ export default function UserProfile() {
           const followersWithDetails = await Promise.all(
             followers.map(async (follower: any) => {
               try {
-                const userResponse = await fetch(`http://localhost:3000/api/users/${follower.follower_id}`, {
+                const userResponse = await fetch(createApiUrl(`/api/users/${follower.follower_id}`), {
                   headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -394,7 +395,7 @@ export default function UserProfile() {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`http://localhost:3000/api/follow/following/${userId}?page=1&limit=50`, {
+      const response = await fetch(createApiUrl(`/api/follow/following/${userId}?page=1&limit=50`), {
         headers: {
           'Authorization': `Bearer ${token}` }
       });
@@ -409,7 +410,7 @@ export default function UserProfile() {
           const followingWithDetails = await Promise.all(
             follows.map(async (follow: any) => {
               try {
-                const userResponse = await fetch(`http://localhost:3000/api/users/${follow.following_id}`, {
+                const userResponse = await fetch(createApiUrl(`/api/users/${follow.following_id}`), {
                   headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -458,7 +459,7 @@ export default function UserProfile() {
         return;
       }
       
-      const response = await fetch(`http://localhost:3000/api/follow/check/${userId}`, {
+      const response = await fetch(createApiUrl(`/api/follow/check/${userId}`), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -487,8 +488,8 @@ export default function UserProfile() {
       
       const method = isFollowing ? 'DELETE' : 'POST';
       const url = isFollowing 
-        ? `http://localhost:3000/api/follow/${userId}`
-        : 'http://localhost:3000/api/follow';
+        ? createApiUrl(`/api/follow/${userId}`)
+        : createApiUrl('/api/follow');
       
       const response = await fetch(url, {
         method,
@@ -500,8 +501,6 @@ export default function UserProfile() {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        
         setIsFollowing(!isFollowing);
         // 프로필 통계 업데이트 (안전하게)
         if (profile && profile.stats) {

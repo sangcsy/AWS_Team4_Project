@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './NotificationBell.css';
+import { createApiUrl } from '../config/api';
 
 interface Notification {
   id: string;
@@ -32,7 +33,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) => {
                 try {
                   const token = localStorage.getItem('token');
                   
-                  const response = await fetch('http://localhost:3000/api/notifications', {
+                  const response = await fetch(createApiUrl('/api/notifications'), {
                     headers: {
                       'Authorization': `Bearer ${token}`
                     }
@@ -54,7 +55,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) => {
   const fetchUnreadCount = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/notifications/unread-count', {
+      const response = await fetch(createApiUrl('/api/notifications/unread-count'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -73,7 +74,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) => {
   const markAsRead = async (notificationId: string) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/notifications/${notificationId}/read`, {
+      const response = await fetch(createApiUrl(`/api/notifications/${notificationId}/read`), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -99,7 +100,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/notifications/mark-all-read', {
+      const response = await fetch(createApiUrl('/api/notifications/mark-all-read'), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -121,7 +122,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) => {
   const deleteNotification = async (notificationId: string) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/notifications/${notificationId}`, {
+      const response = await fetch(createApiUrl(`/api/notifications/${notificationId}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

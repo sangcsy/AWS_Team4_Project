@@ -1,6 +1,7 @@
 // src/pages/Landing.tsx
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'   // ✅ 꼭 필요!
+import { createApiUrl } from '../config/api'
 
 export default function Landing() {
   const navigate = useNavigate()
@@ -28,7 +29,7 @@ export default function Landing() {
     try {
       if (isLoginMode) {
         // 로그인
-        const response = await fetch('http://localhost:3000/api/users/login', {
+        const response = await fetch(createApiUrl('/api/users/login'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -56,7 +57,7 @@ export default function Landing() {
         }
       } else {
         // 회원가입
-        const response = await fetch('http://localhost:3000/api/users/register', {
+        const response = await fetch(createApiUrl('/api/users/register'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, nickname })
@@ -184,14 +185,31 @@ export default function Landing() {
       <div className={`how-overlay ${showHow ? 'open' : ''}`}>
         <div className="how-sheet">
           <div className="how-top">
-            <div className="how-title">How to use</div>
+            <div className="how-title">이용 방법</div>
             <button className="icon-close" onClick={() => setShowHow(false)}>✕</button>
           </div>
 
           <div className="how-grid">
-            <div className="how-card"><div className="how-num">01</div><h3>가입 & 학교 인증</h3><p>학교 이메일로 인증</p></div>
-            <div className="how-card"><div className="how-num">02</div><h3>관심 커뮤니티 팔로우</h3><p>학과/동아리 구독</p></div>
-            <div className="how-card"><div className="how-num">03</div><h3>피드에서 소통</h3><p>글/사진/태그</p></div>
+            <div className="how-card">
+              <div className="how-num">01</div>
+              <h3>가입 & 학교 인증</h3>
+              <p>학교 이메일로 인증</p>
+            </div>
+            <div className="how-card">
+              <div className="how-num">02</div>
+              <h3>관심 커뮤니티 팔로우</h3>
+              <p>학과/동아리 구독</p>
+            </div>
+            <div className="how-card">
+              <div className="how-num">03</div>
+              <h3>피드에서 소통</h3>
+              <p>글/사진/태그</p>
+            </div>
+            <div className="how-card">
+              <div className="how-num">04</div>
+              <h3>랜덤 채팅</h3>
+              <p>익명으로 새로운 친구 만나기</p>
+            </div>
           </div>
 
           <div className="how-cta">

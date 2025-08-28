@@ -241,75 +241,253 @@ body, input, button, textarea {
   /* ===== How to use 오버레이 ===== */
   .how-overlay{
     position: fixed;
-    inset: 0;                 /* 화면 전체 덮기 */
-    pointer-events: none;     /* 닫혀있을 때 클릭 통과 */
-    transform: translateY(100%);  /* 기본: 화면 아래에 숨어있음 */
-    transition: transform .45s ease;
-    z-index: 50;
-    /* 뒤 배경 살짝 어둡게 */
-    background: linear-gradient(180deg, rgba(10,30,60,.15), rgba(10,30,60,.35));
-    backdrop-filter: blur(2px);
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
   }
   .how-overlay.open{
-    transform: translateY(0);     /* 열릴 때 위로 쓸려 올라옴 */
-    pointer-events: auto;         /* 클릭 가능 */
+    opacity: 1;
+    visibility: visible;
   }
   /* 패널을 버튼처럼 쓸 때 */
   .as-button { border: none; background: none; text-align: left; cursor: pointer; }
   
   /* 내용 시트 */
   .how-sheet{
-    height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    background: linear-gradient(160deg, var(--bg1), var(--bg3));
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius);
+    padding: 2.5rem;
+    max-width: 900px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--card-border);
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+  }
+  
+  .how-overlay.open .how-sheet {
+    transform: translateY(0);
   }
   
   /* 상단바 */
   .how-top{
-    display:flex; align-items:center; justify-content:space-between;
-    padding: 18px 22px;
-    border-bottom: 1px solid rgba(255,255,255,.45);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--bg3);
   }
   .how-title{
-    font-weight: 800;
-    font-size: clamp(22px, 3.5vw, 34px);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
   .icon-close{
-    border:none; background:#fff; border-radius:12px; padding:8px 12px; cursor:pointer;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .icon-close:hover {
+    background: var(--bg2);
+    color: var(--text);
+    transform: rotate(90deg);
   }
   
   /* 본문 그리드 */
   .how-grid{
-    flex:1;
-    display:grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    padding: 24px 22px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin-bottom: 2rem;
   }
   .how-card{
-    background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,.6));
-    border: 1px solid rgba(255,255,255,.55);
-    border-radius: 16px;
-    padding: 16px;
-    box-shadow: 0 8px 22px rgba(15,23,42,.08);
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius);
+    padding: 2.5rem 2rem;
+    text-align: center;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--card-border);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
   }
+  
+  .how-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.5s;
+  }
+  
+  .how-card:hover::before {
+    left: 100%;
+  }
+  
+  .how-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+  }
+  
   .how-num{
-    font-weight: 800; color: var(--brand); margin-bottom: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--bg3), var(--bg4));
+    color: white;
+    font-size: 2rem;
+    font-weight: 800;
+    border-radius: 50%;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 10px 25px rgba(29, 78, 216, 0.3);
+    transition: all 0.3s ease;
   }
-  .how-card h3{ margin: 4px 0 6px; }
+  
+  .how-card:hover .how-num {
+    transform: rotate(360deg) scale(1.1);
+    box-shadow: 0 15px 35px rgba(29, 78, 216, 0.4);
+  }
+  
+  .how-card:nth-child(2) .how-num {
+    background: linear-gradient(135deg, var(--brand), var(--bg4));
+    box-shadow: 0 10px 25px rgba(29, 78, 216, 0.3);
+  }
+  
+  .how-card:nth-child(2):hover .how-num {
+    box-shadow: 0 15px 35px rgba(29, 78, 216, 0.4);
+  }
+  
+  .how-card:nth-child(3) .how-num {
+    background: linear-gradient(135deg, var(--bg2), var(--bg3));
+    color: white;
+    box-shadow: 0 10px 25px rgba(116, 192, 252, 0.3);
+  }
+  
+  .how-card:nth-child(3):hover .how-num {
+    box-shadow: 0 15px 35px rgba(116, 192, 252, 0.4);
+  }
+  
+  .how-card:nth-child(4) .how-num {
+    background: linear-gradient(135deg, var(--brand), var(--bg2));
+    color: white;
+    box-shadow: 0 10px 25px rgba(29, 78, 216, 0.3);
+  }
+  
+  .how-card:nth-child(4):hover .how-num {
+    box-shadow: 0 15px 35px rgba(29, 78, 216, 0.4);
+  }
+  
+  .how-card h3{ 
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 1rem;
+    transition: color 0.3s ease;
+  }
+  
+  .how-card:hover h3 {
+    color: var(--brand);
+  }
+  
+  .how-card p {
+    font-size: 1.1rem;
+    color: var(--muted);
+    line-height: 1.6;
+    font-weight: 500;
+  }
+  
+  .how-card:hover p {
+    color: var(--text);
+  }
   
   /* 하단 CTA */
   .how-cta{
-    display:flex; gap:10px; justify-content:center;
-    padding: 18px 22px 24px;
-    border-top: 1px solid rgba(255,255,255,.45);
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  /* 추가 애니메이션 */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+  }
+  
+  .how-card:nth-child(1) {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .how-card:nth-child(2) {
+    animation: float 3s ease-in-out infinite 0.5s;
+  }
+  
+  .how-card:nth-child(3) {
+    animation: float 3s ease-in-out infinite 1s;
+  }
+  
+  .how-card:nth-child(4) {
+    animation: float 3s ease-in-out infinite 1.5s;
   }
   
   /* 반응형 */
-  @media (max-width: 900px){
-    .how-grid{ grid-template-columns: 1fr; }
+  @media (max-width: 768px){
+    .how-title {
+      font-size: 2rem;
+    }
+    
+    .how-grid{ 
+      grid-template-columns: 1fr; 
+      gap: 1.5rem;
+    }
+    
+    .how-card {
+      padding: 2rem 1.5rem;
+    }
+    
+    .how-num {
+      width: 70px;
+      height: 70px;
+      font-size: 1.8rem;
+    }
+    
+    .how-cta {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .how-cta .btn {
+      width: 100%;
+    }
   }
   
   /* ===== 레이아웃 ===== */

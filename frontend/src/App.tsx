@@ -1,4 +1,4 @@
-import { Routes, Route, BrowserRouter as Router } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import Landing from './pages/Landing.tsx'
 import MainApp from './pages/MainApp.tsx'
 import Profile from './pages/Profile.tsx'

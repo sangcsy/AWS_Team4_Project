@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link, Routes, Route, useParams } from 'react-router-dom';
-import UserProfile from './UserProfile';
+import { useNavigate, Link } from 'react-router-dom';
 import NotificationBell from '../components/NotificationBell';
 import RandomChat from '../components/RandomChat';
 import './MainApp.css';
+import { createApiUrl, getApiUrl } from '../config/api';
 
 type Post = {
   id: string
@@ -41,11 +41,12 @@ type Comment = {
 // 카테고리 상수
 const CATEGORIES = ['자유', '장터', '홍보', '진로', '랜덤채팅']
 
+// API 설정 사용 (config/api.ts에서 가져옴)
+
 export default function MainApp() {
   const navigate = useNavigate()
   
   // 인증 상태
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
   
   // 피드 데이터 상태
@@ -59,7 +60,7 @@ export default function MainApp() {
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const [editTitle, setEditTitle] = useState('')
-  const [editCategory, setEditCategory] = useState('')
+
   
   // 댓글 관련 상태
   const [commentText, setCommentText] = useState('')
@@ -77,7 +78,6 @@ export default function MainApp() {
   // 초기 상태 설정 - 게시글 개수 안정화
   useEffect(() => {
     if (posts.length > 0) {
-      console.log('🔄 posts 상태 변경됨, filteredPosts 업데이트:', posts.length)
       setFilteredPosts(posts)
       
       // 현재 선택된 카테고리에 따라 필터링 재적용
@@ -86,19 +86,16 @@ export default function MainApp() {
           const postCategory = post.category || '자유'
           return postCategory === selectedCategory
         })
-        console.log(`🔄 선택된 카테고리(${selectedCategory})에 맞게 재필터링:`, filtered.length)
         setFilteredPosts(filtered)
       }
     }
   }, [posts, selectedCategory])
   
-  // 정렬 상태
-  const [sortBy, setSortBy] = useState<'latest' | 'popular' | 'temperature'>('latest')
+
   
   // 사진 업로드 관련 상태
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [isImageUploading, setIsImageUploading] = useState(false)
   
   // 랜덤채팅 관련 상태
   const [isChatting, setIsChatting] = useState(false)
@@ -114,7 +111,7 @@ export default function MainApp() {
   
   // 팔로잉 관련 상태
   const [followingList, setFollowingList] = useState<string[]>([]) // 내가 팔로우하는 사용자 ID 목록
-  const [followersList, setFollowersList] = useState<string[]>([]) // 나를 팔로우하는 사용자 ID 목록
+
   const [followingUsers, setFollowingUsers] = useState<any[]>([]) // 팔로잉 사용자 상세 정보
   const [followersUsers, setFollowersUsers] = useState<any[]>([]) // 팔로워 사용자 상세 정보
   const [isFollowingLoading, setIsFollowingLoading] = useState(false)
@@ -126,7 +123,6 @@ export default function MainApp() {
   
   // 좋아요 상태 관리
   const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set())
-  const [showUserSearch, setShowUserSearch] = useState(false)
   
   // 로컬 스토리지에서 좋아요 상태 복원
   useEffect(() => {
@@ -171,38 +167,34 @@ export default function MainApp() {
       return
     }
     
-    setIsAuthenticated(true)
-    
     // 로컬 스토리지에 사용자 정보가 있으면 바로 사용
-    if (userNickname && userEmail) {
-      console.log('✅ 로컬 스토리지에서 사용자 정보 로드:', { userNickname, userEmail })
-      const userInfo = {
-        id: userId,
-        nickname: userNickname,
-        email: userEmail,
-        temperature: 36.5
-      }
-      setCurrentUser(userInfo)
-      
-      // 사용자 정보 설정 후 팔로잉 데이터와 홈피드 로드
-      loadFollowingData().then(() => {
-        // currentUser가 설정된 후에 홈피드 로드
-        loadHomeFeed()
-      })
-    } else {
-      console.log('⚠️ 로컬 스토리지에 사용자 정보 없음, API에서 가져오기 시도')
-      // 없으면 기본값으로 설정하고 API에서 가져오기 시도
-      const userInfo = {
-        id: userId,
-        nickname: '사용자',
-        email: '이메일 정보 없음',
-        temperature: 36.5
-      }
-      setCurrentUser(userInfo)
-      
-      // API에서 사용자 정보 가져오기
-      loadUserInfo()
-    }
+     if (userNickname && userEmail) {
+       const userInfo = {
+         id: userId,
+         nickname: userNickname,
+         email: userEmail,
+         temperature: 36.5
+       }
+       setCurrentUser(userInfo)
+       
+       // 사용자 정보 설정 후 팔로잉 데이터와 홈피드 로드
+       loadFollowingData().then(() => {
+         // currentUser가 설정된 후에 홈피드 로드
+         loadHomeFeed()
+       })
+     } else {
+       // 없으면 기본값으로 설정하고 API에서 가져오기 시도
+       const userInfo = {
+         id: userId,
+         nickname: '사용자',
+         email: '이메일 정보 없음',
+         temperature: 36.5
+       }
+       setCurrentUser(userInfo)
+       
+       // API에서 사용자 정보 가져오기
+       loadUserInfo()
+     }
   }, [navigate])
 
   // 사용자 상세 정보 로드
@@ -214,7 +206,7 @@ export default function MainApp() {
       if (!token || !userId) return
       
       // API에서 정보 가져오기
-      const response = await fetch(`http://localhost:3000/api/users/${userId}`, {
+              const response = await fetch(createApiUrl(`/api/users/${userId}`), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -264,17 +256,7 @@ export default function MainApp() {
     }
   }
 
-  // 로그인 성공 시 사용자 정보 저장 (외부에서 호출 가능)
-  const setUserInfo = (nickname: string, email: string) => {
-    localStorage.setItem('userNickname', nickname)
-    localStorage.setItem('userEmail', email)
-    
-    setCurrentUser((prev: any) => ({
-      ...prev,
-      nickname,
-      email
-    }))
-  }
+
 
   // 사진 업로드 관련 함수들
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -310,13 +292,11 @@ export default function MainApp() {
 
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
-      setIsImageUploading(true)
-      
       const formData = new FormData()
       formData.append('image', file)
       
       const token = localStorage.getItem('token')
-      const response = await fetch('http://localhost:3000/api/upload/image', {
+              const response = await fetch(createApiUrl('/api/upload/image'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -324,21 +304,17 @@ export default function MainApp() {
         body: formData
       })
       
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          console.log('✅ 이미지 업로드 성공:', data.data.imageUrl)
-          return data.data.imageUrl
-        }
-      }
-      
-      console.error('❌ 이미지 업로드 실패')
-      return null
+             if (response.ok) {
+         const data = await response.json()
+         if (data.success) {
+           return data.data.imageUrl
+         }
+       }
+       
+       return null
     } catch (error) {
       console.error('이미지 업로드 에러:', error)
       return null
-    } finally {
-      setIsImageUploading(false)
     }
   }
 
@@ -421,18 +397,17 @@ export default function MainApp() {
 
 
 
-  // 홈피드 데이터 로드 (팔로우한 사람 + 인기 게시물, 내 게시물 제외)
-  const loadHomeFeed = async () => {
-    try {
-      // home-feed API가 존재하지 않으므로 바로 기본 홈피드 로드
-      console.log('⚠️ home-feed API가 존재하지 않음, 기본 홈피드 로드로 대체')
-      await loadDefaultHomeFeed()
-    } catch (error) {
-      console.error('홈피드 로드 실패:', error)
-      // 에러 시 기본 게시글 로드 (내 게시물 제외)
-      await loadDefaultHomeFeed()
-    }
-  }
+     // 홈피드 데이터 로드 (팔로우한 사람 + 인기 게시물, 내 게시물 제외)
+   const loadHomeFeed = async () => {
+     try {
+       // home-feed API가 존재하지 않으므로 바로 기본 홈피드 로드
+       await loadDefaultHomeFeed()
+     } catch (error) {
+       console.error('홈피드 로드 실패:', error)
+       // 에러 시 기본 게시글 로드 (내 게시물 제외)
+       await loadDefaultHomeFeed()
+     }
+   }
 
   // 기본 홈피드 데이터 로드 (팔로워가 없거나 API 실패 시)
   const loadDefaultHomeFeed = async () => {
@@ -445,170 +420,128 @@ export default function MainApp() {
         return
       }
       
-      const response = await fetch('http://localhost:3000/api/posts?page=1&limit=20', {
+      const response = await fetch(createApiUrl('/api/posts?page=1&limit=20'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
       
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          console.log('🔍 기본 홈피드 로드 - 전체 게시글:', data.data.posts)
-          console.log('🔍 현재 사용자 ID:', userId)
-          
-          // 내 게시물 제외하고 인기게시글(좋아요 5개 이상)과 팔로워 게시글 구분
-          const filteredPosts = data.data.posts
-            .filter((post: any) => {
-              const isMyPost = post.user_id === userId
-              console.log(`게시글 ${post.id}: user_id=${post.user_id}, userId=${userId}, 내게시글=${isMyPost}`)
-              return !isMyPost // 내 게시물이 아닌 것만 반환
-            })
-            .map((post: any) => {
-              // 인기게시글 여부 판단 (좋아요 5개 이상)
-              const isPopular = (post.likes || 0) >= 5
-              // 팔로잉 상태 확인
-              const isFollowing = followingList.includes(post.user_id)
-              return {
-                ...post,
-                isPopular,
-                isFollowing
-              }
-            })
-            .sort((a: any, b: any) => (b.likes || 0) - (a.likes || 0)) // 좋아요 순 정렬
-            .map(transformPostData)
-          
-          console.log('✅ 기본 홈피드 필터링 결과:', filteredPosts)
-          console.log('✅ 필터링된 게시글 개수:', filteredPosts.length)
-          
-          setPosts(filteredPosts)
-          setFilteredPosts(filteredPosts)
-        }
-      }
+             if (response.ok) {
+         const data = await response.json()
+         if (data.success) {
+           // 내 게시물 제외하고 인기게시글(좋아요 5개 이상)과 팔로워 게시글 구분
+           const filteredPosts = data.data.posts
+             .filter((post: any) => {
+               const isMyPost = post.user_id === userId
+               return !isMyPost // 내 게시물이 아닌 것만 반환
+             })
+             .map((post: any) => {
+               // 인기게시글 여부 판단 (좋아요 5개 이상)
+               const isPopular = (post.likes || 0) >= 5
+               // 팔로잉 상태 확인
+               const isFollowing = followingList.includes(post.user_id)
+               return {
+                 ...post,
+                 isPopular,
+                 isFollowing
+               }
+             })
+             .sort((a: any, b: any) => (b.likes || 0) - (a.likes || 0)) // 좋아요 순 정렬
+             .map(transformPostData)
+           
+           setPosts(filteredPosts)
+           setFilteredPosts(filteredPosts)
+         }
+       }
     } catch (error) {
       console.error('기본 홈피드 로드 실패:', error)
     }
   }
 
-  // 게시글 조회 (기본 함수 - 내 게시글 포함)
-  const fetchPosts = async () => {
-    try {
-      const token = localStorage.getItem('token')
-      console.log('🔍 게시글 조회 시작...')
-      console.log('🔑 Token:', token ? '존재함' : '없음')
-      
-      const response = await fetch('http://localhost:3000/api/posts?page=1&limit=20', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      console.log('📡 Response status:', response.status)
-      console.log('📡 Response ok:', response.ok)
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      console.log('📊 API 응답 데이터:', data)
-      
-      if (data.success) {
-        console.log('✅ 게시글 조회 성공!')
-        console.log('📝 게시글 개수:', data.data?.posts?.length || 0)
-        
-        if (data.data && data.data.posts && Array.isArray(data.data.posts)) {
-          // 백엔드 데이터를 프론트엔드 형식으로 변환
-          const transformedPosts = data.data.posts.map(transformPostData)
-          
-          console.log('🎯 변환된 게시글:', transformedPosts)
-          console.log('🔍 카테고리별 게시글 분포:')
-          const categoryCounts: { [key: string]: number } = {}
-          transformedPosts.forEach((post: Post) => {
-            const category = post.category || '자유'
-            categoryCounts[category] = (categoryCounts[category] || 0) + 1
-          })
-          console.log('📊 카테고리별 개수:', categoryCounts)
-          console.log('🔍 각 게시글의 카테고리 상세:')
-          transformedPosts.forEach((post: Post) => {
-            console.log(`  - ${post.id}: ${post.title} (카테고리: ${post.category || '자유'})`)
-          })
-          
-          // 현재 메뉴에 따라 적절한 필터링 적용
-          if (activeMenu === 'home') {
-            // 홈피드에서는 내 게시글 제외
-            const filteredPosts = transformedPosts.filter((post: any) => post.user_id !== currentUser?.id)
-            console.log('🏠 홈피드 필터링 - 내 게시글 제외:', filteredPosts)
-            setPosts(filteredPosts)
-            setFilteredPosts(filteredPosts)
-          } else {
-            // 커뮤니티에서는 모든 게시글 표시
-            console.log('💬 커뮤니티 - 모든 게시글 표시:', transformedPosts)
-            setPosts(transformedPosts)
-            
-            // 현재 선택된 카테고리에 따라 필터링 적용
-            if (selectedCategory !== '전체') {
-              const filtered = transformedPosts.filter((post: Post) => {
-                const postCategory = post.category || '자유'
-                return postCategory === selectedCategory
-              })
-              setFilteredPosts(filtered)
-              console.log(`🔄 현재 선택된 카테고리(${selectedCategory})에 맞게 필터링:`, filtered.length)
-            } else {
-              setFilteredPosts(transformedPosts)
-            }
-          }
-        } else {
-          console.log('⚠️ data.data.posts가 배열이 아님:', data.data)
-          setPosts([])
-        }
-      } else {
-        console.log('❌ API 응답 실패:', data.error || '알 수 없는 오류')
-        setPosts([])
-      }
-    } catch (error) {
-      console.error('💥 게시글 조회 실패:', error)
-      setPosts([])
-    }
-  }
+     // 게시글 조회 (기본 함수 - 내 게시글 포함)
+   const fetchPosts = async () => {
+     try {
+       const token = localStorage.getItem('token')
+       
+       const response = await fetch(createApiUrl('/api/posts?page=1&limit=20'), {
+         headers: {
+           'Authorization': `Bearer ${token}`
+         }
+       })
+       
+       if (!response.ok) {
+         throw new Error(`HTTP error! status: ${response.status}`)
+       }
+       
+       const data = await response.json()
+       
+       if (data.success) {
+         if (data.data && data.data.posts && Array.isArray(data.data.posts)) {
+           // 백엔드 데이터를 프론트엔드 형식으로 변환
+           const transformedPosts = data.data.posts.map(transformPostData)
+           
+           // 현재 메뉴에 따라 적절한 필터링 적용
+           if (activeMenu === 'home') {
+             // 홈피드에서는 내 게시글 제외
+             const filteredPosts = transformedPosts.filter((post: any) => post.user_id !== currentUser?.id)
+             setPosts(filteredPosts)
+             setFilteredPosts(filteredPosts)
+           } else {
+             // 커뮤니티에서는 모든 게시글 표시
+             setPosts(transformedPosts)
+             
+             // 현재 선택된 카테고리에 따라 필터링 적용
+             if (selectedCategory !== '전체') {
+               const filtered = transformedPosts.filter((post: Post) => {
+                 const postCategory = post.category || '자유'
+                 return postCategory === selectedCategory
+               })
+               setFilteredPosts(filtered)
+             } else {
+               setFilteredPosts(transformedPosts)
+             }
+           }
+         } else {
+           setPosts([])
+         }
+       } else {
+         setPosts([])
+       }
+     } catch (error) {
+       console.error('💥 게시글 조회 실패:', error)
+       setPosts([])
+     }
+   }
 
   // 내 게시글 데이터 로드
   const loadMyPosts = async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch('http://localhost:3000/api/posts?page=1&limit=20', {
+      const response = await fetch(createApiUrl('/api/posts?page=1&limit=20'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
       
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          console.log('🔍 내 게시글 로드 - 전체 게시글:', data.data.posts)
-          console.log('🔍 현재 사용자 ID:', currentUser?.id)
-          
-          if (!currentUser?.id) {
-            console.error('❌ currentUser.id가 설정되지 않음!')
-            return
-          }
-          
-          // 내 게시글만 필터링
-          const myPosts = data.data.posts
-            .filter((post: any) => {
-              const isMyPost = post.user_id === currentUser.id
-              console.log(`게시글 ${post.id}: user_id=${post.user_id}, currentUser.id=${currentUser.id}, 내게시글=${isMyPost}`)
-              return isMyPost // 내 게시글만 반환
-            })
-            .map(transformPostData)
-          
-          console.log('✅ 내 게시글 필터링 결과:', myPosts)
-          console.log('✅ 내 게시글 개수:', myPosts.length)
-          
-          setPosts(myPosts)
-          setFilteredPosts(myPosts)
-        }
-      }
+             if (response.ok) {
+         const data = await response.json()
+         if (data.success) {
+           if (!currentUser?.id) {
+             return
+           }
+           
+           // 내 게시글만 필터링
+           const myPosts = data.data.posts
+             .filter((post: any) => {
+               const isMyPost = post.user_id === currentUser.id
+               return isMyPost // 내 게시글만 반환
+             })
+             .map(transformPostData)
+           
+           setPosts(myPosts)
+           setFilteredPosts(myPosts)
+         }
+       }
     } catch (error) {
       console.error('내 게시글 로드 실패:', error)
     }
@@ -619,47 +552,33 @@ export default function MainApp() {
     const title = draftTitle.trim()
     if (!text || !title) return
     
-    // 카테고리 값 확인 및 로깅
-    const selectedCategory = draftCat || CATEGORIES[0]
-    console.log('📝 게시글 작성 시작:', { 
-      title, 
-      text, 
-      draftCat, 
-      selectedCategory,
-      availableCategories: CATEGORIES 
-    })
-    setIsLoading(true)
-    
-    try {
-      const token = localStorage.getItem('token')
+         // 카테고리 값 확인
+     const selectedCategory = draftCat || CATEGORIES[0]
+     setIsLoading(true)
+     
+     try {
+       const token = localStorage.getItem('token')
+       
+       // 사진 업로드 처리 (게시글 작성 전에 먼저 실행)
+       let imageUrl = null
+       if (selectedImage) {
+         const uploadedUrl = await uploadImage(selectedImage)
+         
+         // 백엔드 서버의 전체 URL로 변환
+         if (uploadedUrl) {
+           imageUrl = `${getApiUrl().baseUrl}${uploadedUrl}`
+         }
+       }
+       
+       const postData = {
+         title: title,
+         content: text,
+         category: selectedCategory,
+         image_url: imageUrl,
+         temperature_change: 0
+       }
       
-      // 사진 업로드 처리 (게시글 작성 전에 먼저 실행)
-      let imageUrl = null
-      if (selectedImage) {
-        console.log('📸 이미지 업로드 시작:', selectedImage.name)
-        const uploadedUrl = await uploadImage(selectedImage)
-        console.log('📸 이미지 업로드 결과:', uploadedUrl)
-        
-        // 백엔드 서버의 전체 URL로 변환
-        if (uploadedUrl) {
-          imageUrl = `http://localhost:3000${uploadedUrl}`
-          console.log('📸 변환된 이미지 URL:', imageUrl)
-        }
-      } else {
-        console.log('📸 선택된 이미지 없음')
-      }
-      
-      const postData = {
-        title: title,
-        content: text,
-        category: selectedCategory,
-        image_url: imageUrl,
-        temperature_change: 0
-      }
-      
-      console.log('📤 서버로 전송할 데이터:', postData)
-      
-      const response = await fetch('http://localhost:3000/api/posts', {
+      const response = await fetch(createApiUrl('/api/posts'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -670,10 +589,8 @@ export default function MainApp() {
       
       const data = await response.json()
       
-      if (data.success) {
-        console.log('✅ 게시글 작성 성공!')
-        
-                 // 홈피드인 경우 홈피드 새로고침 (내 게시물 제외), 아니면 일반 게시글 새로고침
+             if (data.success) {
+         // 홈피드인 경우 홈피드 새로고침 (내 게시물 제외), 아니면 일반 게시글 새로고침
          if (activeMenu === 'home') {
            await loadHomeFeed() // 내 게시물 제외된 홈피드 로드
          } else if (activeMenu === 'myposts') {
@@ -690,19 +607,16 @@ export default function MainApp() {
                  return postCategory === selectedCategory
                })
                setFilteredPosts(filtered)
-               console.log(`🔄 게시글 작성 후 ${selectedCategory} 카테고리 필터링 유지:`, filtered.length)
              }
            }, 200) // 지연 시간을 늘려 posts 상태 업데이트 완료 후 실행
          }
-        
-        setDraftText('')
-        setDraftTitle('')
-        setDraftCat(CATEGORIES[0]) // 카테고리를 기본값으로 초기화
-        setSelectedImage(null)
-        setImagePreview(null)
-      } else {
-        console.log('❌ 게시글 작성 실패:', data.error)
-      }
+         
+         setDraftText('')
+         setDraftTitle('')
+         setDraftCat(CATEGORIES[0]) // 카테고리를 기본값으로 초기화
+         setSelectedImage(null)
+         setImagePreview(null)
+       }
     } catch (error) {
       console.error('게시글 작성 실패:', error)
     } finally {
@@ -718,7 +632,7 @@ export default function MainApp() {
     
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:3000/api/posts/${postId}`, {
+      const response = await fetch(createApiUrl(`/api/posts/${postId}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -732,30 +646,28 @@ export default function MainApp() {
       
       const data = await response.json()
       
-      if (data.success) {
-        // 게시글 목록 업데이트 (posts와 filteredPosts 모두)
-        const updatedPosts = posts.map(post => 
-          post.id === postId 
-            ? { ...post, title: editTitle, content: editText }
-            : post
-        )
-        
-        const updatedFilteredPosts = filteredPosts.map(post => 
-          post.id === postId 
-            ? { ...post, title: editTitle, content: editText }
-            : post
-        )
-        
-        setPosts(updatedPosts)
-        setFilteredPosts(updatedFilteredPosts)
-        
-        setEditingPostId(null)
-        setEditText('')
-        setEditTitle('')
-        setEditCategory('')
-        
-        console.log('✅ 게시글 수정 완료')
-      }
+             if (data.success) {
+         // 게시글 목록 업데이트 (posts와 filteredPosts 모두)
+         const updatedPosts = posts.map(post => 
+           post.id === postId 
+             ? { ...post, title: editTitle, content: editText }
+             : post
+         )
+         
+         const updatedFilteredPosts = filteredPosts.map(post => 
+           post.id === postId 
+             ? { ...post, title: editTitle, content: editText }
+             : post
+         )
+         
+         setPosts(updatedPosts)
+         setFilteredPosts(updatedFilteredPosts)
+         
+         setEditingPostId(null)
+         setEditText('')
+         setEditTitle('')
+ 
+       }
     } catch (error) {
       console.error('게시글 수정 실패:', error)
     } finally {
@@ -771,7 +683,7 @@ export default function MainApp() {
     
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:3000/api/posts/${postId}`, {
+      const response = await fetch(createApiUrl(`/api/posts/${postId}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -780,16 +692,14 @@ export default function MainApp() {
       
       const data = await response.json()
       
-      if (data.success) {
-        // 게시글 목록에서 제거 (posts와 filteredPosts 모두)
-        const updatedPosts = posts.filter(post => post.id !== postId)
-        const updatedFilteredPosts = filteredPosts.filter(post => post.id !== postId)
-        
-        setPosts(updatedPosts)
-        setFilteredPosts(updatedFilteredPosts)
-        
-        console.log('✅ 게시글 삭제 완료')
-      }
+             if (data.success) {
+         // 게시글 목록에서 제거 (posts와 filteredPosts 모두)
+         const updatedPosts = posts.filter(post => post.id !== postId)
+         const updatedFilteredPosts = filteredPosts.filter(post => post.id !== postId)
+         
+         setPosts(updatedPosts)
+         setFilteredPosts(updatedFilteredPosts)
+       }
     } catch (error) {
       console.error('게시글 삭제 실패:', error)
     } finally {
@@ -802,7 +712,7 @@ export default function MainApp() {
     setEditingPostId(post.id)
     setEditText(post.content)
     setEditTitle(post.title)
-    setEditCategory('자유') // 기본값
+    
   }
 
   // 수정 모드 취소
@@ -810,7 +720,7 @@ export default function MainApp() {
     setEditingPostId(null)
     setEditText('')
     setEditTitle('')
-    setEditCategory('')
+    
   }
 
   // 토큰 유효성 검증
@@ -820,7 +730,7 @@ export default function MainApp() {
       if (!token) return false
       
       // 간단한 API 호출로 토큰 유효성 검증
-      const response = await fetch('http://localhost:3000/api/posts', {
+      const response = await fetch(createApiUrl('/api/posts'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -853,7 +763,7 @@ export default function MainApp() {
         return
       }
       
-      const response = await fetch(`http://localhost:3000/api/posts/${postId}/like`, {
+      const response = await fetch(createApiUrl(`/api/posts/${postId}/like`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -942,38 +852,33 @@ export default function MainApp() {
         return
       }
 
-      console.log('🔑 댓글 작성 토큰 확인:', token.substring(0, 20) + '...')
-      
-      const response = await fetch(`http://localhost:3000/api/posts/${postId}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          content: commentText
-        })
-      })
+             const response = await fetch(createApiUrl(`/api/posts/${postId}/comments`), {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+           'Authorization': `Bearer ${token}`
+         },
+         body: JSON.stringify({
+           content: commentText
+         })
+       })
 
-      console.log('📡 댓글 작성 API 응답 상태:', response.status)
-      
-      if (response.ok) {
-        // 댓글 추가 후 게시글 목록 새로고침
-        await fetchPosts()
-        setCommentText('')
-        setReplyingTo(null)
-        
-        console.log('✅ 댓글 작성 완료')
-        alert('댓글이 작성되었습니다.')
-      } else if (response.status === 401) {
-        console.error('❌ 댓글 작성 인증 실패 (401)')
-        alert('로그인이 만료되었습니다. 다시 로그인해주세요.')
-        navigate('/')
-      } else {
-        console.error('❌ 댓글 작성 API 오류:', response.status)
-        const errorData = await response.json().catch(() => ({}))
-        alert('댓글 작성 중 오류가 발생했습니다: ' + (errorData.error || '알 수 없는 오류'))
-      }
+       if (response.ok) {
+         // 댓글 추가 후 게시글 목록 새로고침
+         await fetchPosts()
+         setCommentText('')
+         setReplyingTo(null)
+         
+         alert('댓글이 작성되었습니다.')
+       } else if (response.status === 401) {
+         console.error('❌ 댓글 작성 인증 실패 (401)')
+         alert('로그인이 만료되었습니다. 다시 로그인해주세요.')
+         navigate('/')
+       } else {
+         console.error('❌ 댓글 작성 API 오류:', response.status)
+         const errorData = await response.json().catch(() => ({}))
+         alert('댓글 작성 중 오류가 발생했습니다: ' + (errorData.error || '알 수 없는 오류'))
+       }
     } catch (error) {
       console.error('💥 댓글 작성 실패:', error)
       alert('댓글 작성 중 오류가 발생했습니다.')
@@ -1034,7 +939,7 @@ export default function MainApp() {
     setIsSearching(true)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:3000/api/posts/search?q=${encodeURIComponent(searchQuery)}`, {
+      const response = await fetch(createApiUrl(`/api/posts/search?q=${encodeURIComponent(searchQuery)}`), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -1065,33 +970,20 @@ export default function MainApp() {
     setIsSearching(false)
   }
 
-  // 카테고리 필터링 함수
-  const filterByCategory = (category: string) => {
-    console.log('🔍 카테고리 필터링 시작:', category)
-    console.log('📊 현재 전체 게시글 수:', posts.length)
-    console.log('📊 현재 필터링된 게시글 수:', filteredPosts.length)
-    console.log('📊 전체 게시글 카테고리 분포:', posts.map(p => ({ id: p.id, title: p.title, category: p.category || '자유' })))
-    
-    setSelectedCategory(category)
-    
-    if (category === '전체') {
-      setFilteredPosts(posts)
-      console.log('✅ 전체 게시글 표시:', posts.length)
-    } else {
-      const filtered = posts.filter((post: Post) => {
-        const postCategory = post.category || '자유'
-        const matches = postCategory === category
-        if (matches) {
-          console.log(`✅ 매칭 게시글: ${post.id} - ${post.title} (카테고리: ${postCategory})`)
-        } else {
-          console.log(`❌ 불일치: ${post.id} - ${post.title} (카테고리: ${postCategory}, 찾는 카테고리: ${category})`)
-        }
-        return matches
-      })
-      console.log(`✅ ${category} 카테고리 게시글 필터링 완료:`, filtered.length)
-      setFilteredPosts(filtered)
-    }
-  }
+     // 카테고리 필터링 함수
+   const filterByCategory = (category: string) => {
+     setSelectedCategory(category)
+     
+     if (category === '전체') {
+       setFilteredPosts(posts)
+     } else {
+       const filtered = posts.filter((post: Post) => {
+         const postCategory = post.category || '자유'
+         return postCategory === category
+       })
+       setFilteredPosts(filtered)
+     }
+   }
 
   // 카테고리별 게시글 개수 계산
   const getCategoryPostCount = (category: string) => {
@@ -1122,25 +1014,7 @@ export default function MainApp() {
     }
   }
 
-  // 게시글 정렬 함수
-  const sortPosts = (sortType: 'latest' | 'popular' | 'temperature') => {
-    setSortBy(sortType)
-    let sortedPosts = [...posts] // posts를 기반으로 정렬
-    
-    switch (sortType) {
-      case 'latest':
-        sortedPosts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        break
-      case 'popular':
-        sortedPosts.sort((a, b) => (b.likes || 0) - (a.likes || 0))
-        break
-      case 'temperature':
-        sortedPosts.sort((a, b) => (b.user?.temperature || 0) - (a.user?.temperature || 0))
-        break
-    }
-    
-    setFilteredPosts(sortedPosts)
-  }
+
 
 
 
@@ -1159,85 +1033,78 @@ export default function MainApp() {
       }
       
       // 팔로잉 목록 로드 (사용자 정보 포함)
-      const followingResponse = await fetch(`http://localhost:3000/api/follow/following/${userId}?page=1&limit=50`, {
+      const followingResponse = await fetch(createApiUrl(`/api/follow/following/${userId}?page=1&limit=50`), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
       
-      if (followingResponse.ok) {
-        const followingData = await followingResponse.json()
-        console.log('📊 팔로잉 API 응답:', followingData)
-        if (followingData.success) {
-          // 백엔드 응답 구조: { follows: Array, total: number, page: number, limit: number }
-          const followingUsers = followingData.data.follows || []
-          console.log('📋 팔로잉 사용자 목록:', followingUsers)
-          setFollowingList(followingUsers.map((f: any) => f.following_id))
-          console.log('✅ 팔로잉 목록 로드 성공:', followingUsers)
-          
-          // 팔로잉 사용자들의 상세 정보 가져오기
-          const followingWithDetails = await Promise.all(
-            followingUsers.map(async (follow: any) => {
-              try {
-                // 사용자 기본 정보를 직접 가져오기 (간단한 사용자 정보 API 사용)
-                const userResponse = await fetch(`http://localhost:3000/api/users/${follow.following_id}`, {
-                  headers: { 'Authorization': `Bearer ${token}` }
-                })
-                
-                if (userResponse.ok) {
-                  const userData = await userResponse.json()
-                  console.log('👤 팔로잉 사용자 정보 응답:', userData)
-                  
-                  if (userData.success && userData.data) {
-                    // 데이터 구조에 따라 닉네임과 온도 추출
-                    let nickname = '사용자';
-                    let temperature = 36.5;
-                    
-                    if (userData.data.nickname) {
-                      nickname = userData.data.nickname;
-                    } else if (userData.data.user && userData.data.user.nickname) {
-                      nickname = userData.data.user.nickname;
-                    }
-                    
-                    if (userData.data.temperature) {
-                      temperature = userData.data.temperature;
-                    } else if (userData.data.user && userData.data.user.temperature) {
-                      temperature = userData.data.user.temperature;
-                    }
-                    
-                    console.log('✅ 팔로잉 사용자 정보 추출:', { nickname, temperature })
-                    
-                    return {
-                      ...follow,
-                      nickname: nickname,
-                      temperature: temperature
-                    }
-                  }
-                }
-                
-                // API 호출 실패 시 기본값 반환
-                return {
-                  ...follow,
-                  nickname: `사용자 ${follow.following_id.substring(0, 8)}`,
-                  temperature: 36.5
-                }
-              } catch (error) {
-                console.error('사용자 정보 로드 실패:', error)
-                return {
-                  ...follow,
-                  nickname: `사용자 ${follow.following_id.substring(0, 8)}`,
-                  temperature: 36.5
-                }
-              }
-            })
-          )
-          console.log('✅ 팔로잉 상세 정보:', followingWithDetails)
-          setFollowingUsers(followingWithDetails)
-        }
-      }
+             if (followingResponse.ok) {
+         const followingData = await followingResponse.json()
+         if (followingData.success) {
+           // 백엔드 응답 구조: { follows: Array, total: number, page: number, limit: number }
+           const followingUsers = followingData.data.follows || []
+           setFollowingList(followingUsers.map((f: any) => f.following_id))
+           
+           // 팔로잉 사용자들의 상세 정보 가져오기
+           const followingWithDetails = await Promise.all(
+             followingUsers.map(async (follow: any) => {
+               try {
+                 // 사용자 기본 정보를 직접 가져오기 (간단한 사용자 정보 API 사용)
+                 const userResponse = await fetch(createApiUrl(`/api/users/${follow.following_id}`), {
+                   headers: { 'Authorization': `Bearer ${token}` }
+                 })
+                 
+                 if (userResponse.ok) {
+                   const userData = await userResponse.json()
+                   
+                   if (userData.success && userData.data) {
+                     // 데이터 구조에 따라 닉네임과 온도 추출
+                     let nickname = '사용자';
+                     let temperature = 36.5;
+                     
+                     if (userData.data.nickname) {
+                       nickname = userData.data.nickname;
+                     } else if (userData.data.user && userData.data.user.nickname) {
+                       nickname = userData.data.user.nickname;
+                     }
+                     
+                     if (userData.data.temperature) {
+                       temperature = userData.data.temperature;
+                     } else if (userData.data.user && userData.data.user.temperature) {
+                       temperature = userData.data.user.temperature;
+                     }
+                     
+                     return {
+                       ...follow,
+                       nickname: nickname,
+                       temperature: temperature
+                     }
+                   }
+                 }
+                 
+                 // API 호출 실패 시 기본값 반환
+                 return {
+                   ...follow,
+                   nickname: `사용자 ${follow.following_id.substring(0, 8)}`,
+                   temperature: 36.5
+                 }
+               } catch (error) {
+                 console.error('사용자 정보 로드 실패:', error)
+                 return {
+                   ...follow,
+                   nickname: `사용자 ${follow.following_id.substring(0, 8)}`,
+                   temperature: 36.5
+                 }
+               }
+             })
+           )
+           setFollowingUsers(followingWithDetails)
+         }
+       }
       
       // 팔로워 목록 로드 (사용자 정보 포함)
-      const followersResponse = await fetch(`http://localhost:3000/api/follow/followers/${userId}?page=1&limit=50`, {
+      const followersResponse = await fetch(createApiUrl(`/api/follow/followers/${userId}?page=1&limit=50`), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -1245,26 +1112,23 @@ export default function MainApp() {
       
       if (followersResponse.ok) {
         const followersData = await followersResponse.json()
-        console.log('📊 팔로워 API 응답:', followersData)
+
         if (followersData.success) {
           // 백엔드 응답 구조: { follows: Array, total: number, page: number, limit: number }
           const followerUsers = followersData.data.follows || []
-          console.log('📋 팔로워 사용자 목록:', followerUsers)
-          setFollowersList(followerUsers.map((f: any) => f.follower_id))
-          console.log('✅ 팔로워 목록 로드 성공:', followerUsers)
           
           // 팔로워 사용자들의 상세 정보 가져오기
           const followersWithDetails = await Promise.all(
             followerUsers.map(async (follow: any) => {
               try {
                 // 사용자 기본 정보를 직접 가져오기 (간단한 사용자 정보 API 사용)
-                const userResponse = await fetch(`http://localhost:3000/api/users/${follow.follower_id}`, {
+                const userResponse = await fetch(createApiUrl(`/api/users/${follow.follower_id}`), {
                   headers: { 'Authorization': `Bearer ${token}` }
                 })
                 
                 if (userResponse.ok) {
                   const userData = await userResponse.json()
-                  console.log('👤 팔로워 사용자 정보 응답:', userData)
+          
                   
                   if (userData.success && userData.data) {
                     // 데이터 구조에 따라 닉네임과 온도 추출
@@ -1283,7 +1147,7 @@ export default function MainApp() {
                       temperature = userData.data.user.temperature;
                     }
                     
-                    console.log('✅ 팔로워 사용자 정보 추출:', { nickname, temperature })
+            
                     
                     return {
                       ...follow,
@@ -1309,7 +1173,7 @@ export default function MainApp() {
               }
             })
           )
-          console.log('✅ 팔로워 상세 정보:', followersWithDetails)
+  
           setFollowersUsers(followersWithDetails)
         }
       }
@@ -1327,8 +1191,8 @@ export default function MainApp() {
       const isCurrentlyFollowing = followingList.includes(targetUserId)
       
       const url = isCurrentlyFollowing 
-        ? `http://localhost:3000/api/follow/${targetUserId}`
-        : 'http://localhost:3000/api/follow';
+        ? createApiUrl(`/api/follow/${targetUserId}`)
+        : createApiUrl('/api/follow');
       
       const response = await fetch(url, {
         method: isCurrentlyFollowing ? 'DELETE' : 'POST',
@@ -1345,11 +1209,11 @@ export default function MainApp() {
           if (isCurrentlyFollowing) {
             // 언팔로우
             setFollowingList(prev => prev.filter(id => id !== targetUserId))
-            console.log('✅ 언팔로우 성공:', targetUserId)
+    
           } else {
             // 팔로우
             setFollowingList(prev => [...prev, targetUserId])
-            console.log('✅ 팔로우 성공:', targetUserId)
+    
           }
           
           // 홈피드 새로고침 (팔로잉 상태 변경으로 인한 업데이트)
@@ -1376,7 +1240,7 @@ export default function MainApp() {
         break
       case 'community':
         // 커뮤니티에서는 모든 게시글 표시
-        console.log('커뮤니티 페이지로 이동')
+    
         fetchPosts()
         break
       case 'myposts':
@@ -1384,7 +1248,7 @@ export default function MainApp() {
         break
       case 'randomchat':
         // 랜덤채팅 페이지
-        console.log('랜덤채팅 페이지로 이동')
+    
         break
       case 'myroom':
         // 마이룸을 클릭하면 현재 사용자의 프로필 페이지로 이동
@@ -1408,9 +1272,7 @@ export default function MainApp() {
     setIsUserSearching(true)
     try {
       const token = localStorage.getItem('token')
-      console.log('🔍 사용자 검색 시작:', userSearchQuery)
-      console.log('🔑 토큰 상태:', token ? '존재함' : '없음')
-      console.log('🔑 토큰 내용:', token ? token.substring(0, 20) + '...' : 'N/A')
+      
       
       if (!token) {
         console.error('❌ 인증 토큰이 없습니다.')
@@ -1419,23 +1281,22 @@ export default function MainApp() {
         return
       }
       
-      const response = await fetch(`http://localhost:3000/api/users/search?q=${encodeURIComponent(userSearchQuery)}`, {
+      const response = await fetch(createApiUrl(`/api/users/search?q=${encodeURIComponent(userSearchQuery)}`), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
 
-      console.log('📡 사용자 검색 응답:', response.status)
-      console.log('📡 응답 헤더:', Object.fromEntries(response.headers.entries()))
+      
 
       if (response.ok) {
         const data = await response.json()
-        console.log('📊 사용자 검색 결과:', data)
+
         
         if (data.success) {
           // 현재 사용자 제외하고 검색 결과 필터링
           const filteredUsers = data.data.users.filter((user: any) => user.id !== currentUser?.id)
-          console.log('✅ 필터링된 사용자:', filteredUsers)
+  
           setUserSearchResults(filteredUsers)
         } else {
           console.error('❌ 사용자 검색 API 실패:', data.error)
@@ -1466,11 +1327,10 @@ export default function MainApp() {
     setUserSearchQuery('')
     setUserSearchResults([])
     setIsUserSearching(false)
-    setShowUserSearch(false)
   }
 
   // 사용자 프로필 방문
-  const visitUserProfile = (userId: string, nickname: string) => {
+  const visitUserProfile = (userId: string) => {
     // 프로필 페이지로 이동
     navigate(`/profile/${userId}`)
   }
@@ -1608,30 +1468,7 @@ export default function MainApp() {
                 </div>
               </section>
 
-              {/* 정렬 옵션 */}
-              <section className="card sort-options">
-                <h4>🔄 정렬</h4>
-                <div className="sort-list">
-                  <button 
-                    className={`sort-item ${sortBy === 'latest' ? 'active' : ''}`}
-                    onClick={() => sortPosts('latest')}
-                  >
-                    📅 최신순
-                  </button>
-                  <button 
-                    className={`sort-item ${sortBy === 'popular' ? 'active' : ''}`}
-                    onClick={() => sortPosts('popular')}
-                  >
-                    ❤️ 인기순
-                  </button>
-                  <button 
-                    className={`sort-item ${sortBy === 'temperature' ? 'active' : ''}`}
-                    onClick={() => sortPosts('temperature')}
-                  >
-                    🔥 온도순
-                  </button>
-                </div>
-              </section>
+              
             </>
           )}
 
@@ -1664,7 +1501,7 @@ export default function MainApp() {
                     value={draftCat}
                     onChange={(e) => {
                       const newCategory = e.target.value
-                      console.log('🎯 카테고리 선택됨:', { old: draftCat, new: newCategory })
+                  
                       setDraftCat(newCategory)
                     }}
                   >
@@ -1765,7 +1602,7 @@ export default function MainApp() {
                         <div className="user-actions">
                           <button 
                             className="btn primary small"
-                            onClick={() => visitUserProfile(user.id, user.nickname)}
+                                                            onClick={() => visitUserProfile(user.id)}
                           >
                             프로필
                           </button>
@@ -1830,7 +1667,7 @@ export default function MainApp() {
                            <div className="user-actions">
                              <button 
                                className="btn primary small"
-                               onClick={() => visitUserProfile(user.following_id, user.nickname)}
+                                                               onClick={() => visitUserProfile(user.following_id)}
                              >
                                프로필
                              </button>
@@ -1873,7 +1710,7 @@ export default function MainApp() {
                            <div className="user-actions">
                              <button 
                                className="btn primary small"
-                               onClick={() => visitUserProfile(user.follower_id, user.nickname)}
+                                                               onClick={() => visitUserProfile(user.follower_id)}
                              >
                                프로필
                              </button>
@@ -1927,7 +1764,7 @@ export default function MainApp() {
                             <div className="name">
                               <button 
                                 className="user-nickname-btn"
-                                onClick={() => visitUserProfile(p.user_id, p.user?.nickname || '알 수 없음')}
+                                onClick={() => visitUserProfile(p.user_id)}
                               >
                                 {p.user?.nickname || '알 수 없음'}
                               </button>
@@ -1999,7 +1836,7 @@ export default function MainApp() {
                             <div className="name">
                               <button 
                                 className="user-nickname-btn"
-                                onClick={() => visitUserProfile(p.user_id, p.user?.nickname || '알 수 없음')}
+                                onClick={() => visitUserProfile(p.user_id)}
                               >
                                 {p.user?.nickname || '알 수 없음'}
                               </button>
@@ -2023,12 +1860,6 @@ export default function MainApp() {
                             {/* 내 게시글인 경우 수정/삭제 버튼 */}
                             {(() => {
                               const isMyPost = currentUser?.id === p.user_id;
-                              console.log(`🔍 게시글 ${p.id} 권한 확인:`, {
-                                postUserId: p.user_id,
-                                currentUserId: currentUser?.id,
-                                isMyPost: isMyPost,
-                                currentUser: currentUser
-                              });
                               return isMyPost ? (
                                 <div className="post-actions-menu">
                                   <button 
@@ -2199,7 +2030,7 @@ export default function MainApp() {
                         <div className="name">
                           <button 
                             className="user-nickname-btn"
-                            onClick={() => visitUserProfile(p.user_id, p.user?.nickname || '알 수 없음')}
+                            onClick={() => visitUserProfile(p.user_id)}
                           >
                             {p.user?.nickname || '알 수 없음'}
                           </button>
@@ -2300,7 +2131,7 @@ export default function MainApp() {
                         <div className="name">
                           <button 
                             className="user-nickname-btn"
-                            onClick={() => visitUserProfile(p.user_id, p.user?.nickname || '알 수 없음')}
+                            onClick={() => visitUserProfile(p.user_id)}
                           >
                             {p.user?.nickname || '알 수 없음'}
                           </button>

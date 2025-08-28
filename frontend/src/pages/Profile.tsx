@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { createApiUrl } from '../config/api'
 
 interface Profile {
   id: string
@@ -43,7 +44,7 @@ export default function Profile() {
       const token = localStorage.getItem('token')
       const userId = localStorage.getItem('userId')
       
-      const response = await fetch(`http://localhost:3000/api/profiles/${userId}`, {
+      const response = await fetch(createApiUrl(`/api/profiles/${userId}`), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -88,8 +89,8 @@ export default function Profile() {
       
       const method = profile ? 'PUT' : 'POST'
       const url = profile 
-        ? `http://localhost:3000/api/profiles/${userId}`
-        : 'http://localhost:3000/api/profiles'
+        ? createApiUrl(`/api/profiles/${userId}`)
+        : createApiUrl('/api/profiles')
       
       const response = await fetch(url, {
         method,

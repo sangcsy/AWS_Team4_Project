@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import './RandomChat.css';
+import { getWsUrl } from '../config/api';
 
 interface ChatMessage {
   id: string;
@@ -36,7 +37,7 @@ export default function RandomChat() {
 
   // Socket.io 연결
   useEffect(() => {
-    const newSocket = io('http://localhost:3000');
+    const newSocket = io(getWsUrl());
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
